@@ -1,20 +1,20 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
+import { user } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export async function updateUserProfile(userId: string, data: { name: string; email: string }) {
   try {
     const [updatedUser] = await db
-      .update(users)
+      .update(user)
       .set({
         name: data.name,
         email: data.email,
         updatedAt: new Date(),
       })
-      .where(eq(users.id, userId))
+      .where(eq(user.id, userId))
       .returning();
 
     return { success: true, user: updatedUser };
@@ -46,7 +46,7 @@ export async function changePassword(userId: string, currentPassword: string, ne
 export async function deleteUserAccount(userId: string) {
   try {
     // Delete user and all associated data (cascade will handle related records)
-    await db.delete(users).where(eq(users.id, userId));
+    await db.delete(user).where(eq(user.id, userId));
     
     return { success: true };
   } catch (error) {
