@@ -2,6 +2,7 @@
 
 import { createAuthClient } from 'better-auth/react';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Define session type based on better-auth structure
 interface User {
@@ -41,6 +42,9 @@ export { authClient };
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const router = useRouter();
+
 
   useEffect(() => {
     // Initialize session on mount
@@ -84,6 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await authClient.signIn.email(credentials);
       if (result.data) {
         setSession({ user: result.data.user });
+        router.push('/'); 
+
       }
       return result;
     } catch (error) {

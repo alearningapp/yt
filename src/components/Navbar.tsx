@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { User, Settings, LogOut } from 'lucide-react';
 
 export function Navbar() {
-  const { session, isLoading, authClient } = useAuth();
+  const { session, isLoading, authClient,signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function Navbar() {
                     </Link>
                     <button
                       onClick={() => {
-                        authClient.signOut();
+                        signOut();
                         setIsMenuOpen(false);
                       }}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
