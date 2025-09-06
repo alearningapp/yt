@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { ChannelFormData } from '@/types';
+import { FaPlus } from 'react-icons/fa';
 
 interface AddChannelFormProps {
   userId: string;
@@ -61,6 +62,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   if (!isOpen) {
     return (
       <Button onClick={() => setIsOpen(true)} className="mb-4 bg-gray-200">
+        <FaPlus className="mr-2" />
         Add New Channel
       </Button>
     );
