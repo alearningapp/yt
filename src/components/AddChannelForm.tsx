@@ -136,7 +136,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
             <Button
               type="submit"
               disabled={isLoading}
-              className="flex-1 flex items-center justify-center gap-2"
+              className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white"
             >
               {isLoading ? (
                 <>
