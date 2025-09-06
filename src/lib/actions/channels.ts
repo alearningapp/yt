@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { channels, channelClicks, users } from '@/lib/db/schema';
+import { channels, channelClicks, user } from '@/lib/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { ChannelFormData, ChannelWithDetails } from '@/types';
 
@@ -35,37 +35,37 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
         updatedAt: channels.updatedAt,
         createdBy: channels.createdBy,
         createdByUser: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          image: users.image,
-          emailVerified: users.emailVerified,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          emailVerified: user.emailVerified,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
         },
       })
       .from(channels)
-      .leftJoin(users, eq(channels.createdBy, users.id))
+      .leftJoin(user, eq(channels.createdBy, user.id))
       .orderBy(desc(channels.createdAt));
 
-    // Get click counts and clicked users for each channel
+    // Get click counts and clicked user for each channel
     const channelsWithClicks = await Promise.all(
       channelsWithDetails.map(async (channel) => {
         const clicks = await db
           .select({
             user: {
-              id: users.id,
-              name: users.name,
-              email: users.email,
-              image: users.image,
-              emailVerified: users.emailVerified,
-              createdAt: users.createdAt,
-              updatedAt: users.updatedAt,
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image,
+              emailVerified: user.emailVerified,
+              createdAt: user.createdAt,
+              updatedAt: user.updatedAt,
             },
             clickedAt: channelClicks.clickedAt,
           })
           .from(channelClicks)
-          .leftJoin(users, eq(channelClicks.userId, users.id))
+          .leftJoin(user, eq(channelClicks.userId, user.id))
           .where(eq(channelClicks.channelId, channel.id));
 
         return {
@@ -96,17 +96,17 @@ export async function getChannelById(id: string): Promise<ChannelWithDetails | n
         updatedAt: channels.updatedAt,
         createdBy: channels.createdBy,
         createdByUser: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          image: users.image,
-          emailVerified: users.emailVerified,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          emailVerified: user.emailVerified,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
         },
       })
       .from(channels)
-      .leftJoin(users, eq(channels.createdBy, users.id))
+      .leftJoin(user, eq(channels.createdBy, user.id))
       .where(eq(channels.id, id));
 
     if (!channel) return null;
@@ -114,18 +114,18 @@ export async function getChannelById(id: string): Promise<ChannelWithDetails | n
     const clicks = await db
       .select({
         user: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          image: users.image,
-          emailVerified: users.emailVerified,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          emailVerified: user.emailVerified,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
         },
         clickedAt: channelClicks.clickedAt,
       })
       .from(channelClicks)
-      .leftJoin(users, eq(channelClicks.userId, users.id))
+      .leftJoin(user, eq(channelClicks.userId, user.id))
       .where(eq(channelClicks.channelId, id));
 
     return {
