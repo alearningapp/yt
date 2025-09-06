@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { ChannelFormData } from '@/types';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaTimes, FaSpinner } from 'react-icons/fa';
 
 interface AddChannelFormProps {
   userId: string;
@@ -31,7 +31,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
 
     try {
       const result = await createChannel(formData, userId);
-      
+
       if (result.success) {
         setFormData({
           channelLink: '',
@@ -71,7 +71,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
       <h3 className="text-lg font-semibold mb-4">Add New Channel</h3>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -133,17 +133,32 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         </div>
 
         <div className="flex space-x-2">
-          <Button type="submit" disabled={isLoading} className="flex-1">
-            {isLoading ? 'Adding...' : 'Add Channel'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setIsOpen(false)}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <FaSpinner className="animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <FaPlus />
+                  Add Channel
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              className="flex-1 flex items-center justify-center gap-2"
+            >
+              <FaTimes />
+              Cancel
+            </Button>
         </div>
       </form>
     </div>
