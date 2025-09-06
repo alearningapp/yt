@@ -60,7 +60,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
 
   if (!isOpen) {
     return (
-      <Button onClick={() => setIsOpen(true)} className="w-full mb-4">
+      <Button onClick={() => setIsOpen(true)} className="mb-4 bg-gray-200">
         Add New Channel
       </Button>
     );
