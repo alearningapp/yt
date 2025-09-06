@@ -10,6 +10,11 @@ export function Navbar() {
   const { session, isLoading, authClient } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  useEffect(() => {
+    console.log('session', session);
+    setIsMenuOpen(!session);
+  }, [session]);
+
   if (isLoading) {
     return (
       <nav className="bg-white shadow-sm border-b">

@@ -68,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out function
   const signOut = async () => {
     try {
+      console.log('signing out');
       const result = await authClient.signOut();
       setSession(null);
       return result;
