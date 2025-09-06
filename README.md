@@ -1,36 +1,178 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HelpYT - YouTube Channel Sharing Platform
+
+A modern web application built with Next.js, better-auth, and PostgreSQL that allows users to discover and share YouTube channels with the community.
+
+## Features
+
+- **User Authentication**: Sign up/sign in with email/password or Google OAuth
+- **Channel Management**: Add, edit, and delete YouTube channels
+- **Channel Discovery**: Browse channels added by other users, ordered by creation time
+- **Click Tracking**: Track clicks on channel links and see who clicked them
+- **User Settings**: Change password, update profile, and delete account
+- **Responsive Design**: Modern UI built with Tailwind CSS
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Authentication**: better-auth
+- **Database**: PostgreSQL with Drizzle ORM
+- **UI Components**: Custom components with Lucide React icons
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ 
+- PostgreSQL database
+- Google OAuth credentials (optional)
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd helpyt
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Configure your environment variables in `.env.local`:
+```env
+# Database
+DATABASE_URL="postgresql://username:password@localhost:5432/helpyt"
 
-## Learn More
+# Better Auth
+BETTER_AUTH_SECRET="your-secret-key-here"
+BETTER_AUTH_URL="http://localhost:3000"
 
-To learn more about Next.js, take a look at the following resources:
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Email (for password reset)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASSWORD="your-app-password"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Set up the database:
+```bash
+# Generate migration files
+npm run db:generate
 
-## Deploy on Vercel
+# Push schema to database
+npm run db:push
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+6. Start the development server:
+```bash
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+7. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Database Schema
+
+The application uses the following main tables:
+
+- **users**: User accounts and profiles
+- **accounts**: OAuth account connections
+- **sessions**: User sessions
+- **channels**: YouTube channel information
+- **channel_clicks**: Click tracking for channels
+
+## API Routes
+
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/signin` - User login
+- `POST /api/auth/signout` - User logout
+- `GET /api/auth/session` - Get current session
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js app directory
+│   ├── api/auth/          # Authentication API routes
+│   ├── channels/[id]/     # Channel detail pages
+│   ├── signin/            # Sign in page
+│   ├── signup/            # Sign up page
+│   ├── settings/          # User settings page
+│   └── page.tsx           # Home page
+├── components/            # React components
+│   ├── auth/              # Authentication components
+│   ├── ui/                # Reusable UI components
+│   └── providers/         # Context providers
+├── lib/                   # Utility libraries
+│   ├── actions/           # Server actions
+│   ├── auth.ts            # Auth configuration
+│   └── db/                # Database configuration
+└── types/                 # TypeScript type definitions
+```
+
+## Features in Detail
+
+### Channel Management
+- Users can add YouTube channels with name, description, link, and subscriber count
+- Only channel creators can edit or delete their channels
+- Channels are displayed in chronological order (newest first)
+
+### Click Tracking
+- Each channel click is tracked with user information and timestamp
+- Users can see who clicked their channels and when
+- Click counts are displayed on both channel cards and detail pages
+
+### User Settings
+- Profile management (name, email)
+- Password change functionality
+- Account deletion with confirmation
+
+## Development
+
+### Database Commands
+
+```bash
+# Generate migration files
+npm run db:generate
+
+# Push schema changes to database
+npm run db:push
+
+# Open Drizzle Studio (database GUI)
+npm run db:studio
+```
+
+### Code Quality
+
+```bash
+# Run ESLint
+npm run lint
+```
+
+## Deployment
+
+1. Set up a PostgreSQL database (e.g., using Vercel Postgres, Supabase, or Railway)
+2. Configure environment variables in your deployment platform
+3. Run database migrations
+4. Deploy to Vercel, Netlify, or your preferred platform
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
