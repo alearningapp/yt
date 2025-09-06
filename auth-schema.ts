@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, uuid, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -59,32 +59,3 @@ export const verification = pgTable("verification", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
-
-export const verificationToken = pgTable('verificationToken', {
-  identifier: text('identifier').notNull(),
-  token: text('token').notNull().unique(),
-  expires: timestamp('expires').notNull(),
-});
-
-// Your custom tables can remain as-is
-export const channels = pgTable('channels', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  channelLink: text('channel_link').notNull(),
-  channelName: text('channel_name').notNull(),
-  description: text('description').notNull(),
-  subscriptionCount: integer('subscription_count').notNull().default(0),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' }), // Change to text reference
-});
-
-export const channelClicks = pgTable('channel_clicks', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  channelId: uuid('channel_id').notNull().references(() => channels.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }), // Change to text reference
-  clickedAt: timestamp('clicked_at').defaultNow().notNull(),
-});
-
-export type User = typeof user.$inferSelect;
-export type Channel = typeof channels.$inferSelect;
-export type ChannelClick = typeof channelClicks.$inferSelect;
