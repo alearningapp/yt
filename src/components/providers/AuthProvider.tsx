@@ -104,6 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await authClient.signUp.email(credentials);
       if (result.data) {
         setSession({ user: result.data.user });
+        router.push('/'); 
+
       }
       return result;
     } catch (error) {
