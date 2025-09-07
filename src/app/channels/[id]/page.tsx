@@ -27,6 +27,78 @@ export default function ChannelDetailPage() {
 
   const channelId = params.id as string;
 
+
+  function extractVideoId(url: string) {
+    if (!url.includes('youtube') && !url.includes('youtu.be')) {
+        return url; // Assume it's already a video ID
+    }
+    
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=)([^&]+)/,
+        /(?:youtube\.com\/embed\/)([^?]+)/,
+        /(?:youtu\.be\/)([^?]+)/,
+        /(?:youtube\.com\/v\/)([^?]+)/,
+        /(?:youtube\.com\/watch\?.*v=)([^&]+)/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+    
+    return null;
+}
+
+// Fetch video info using oEmbed API
+async function fetchVideoInfo(videoId: any) {
+    try {
+        
+        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+        
+        if (!response.ok) {
+            throw new Error('Video not found or unavailable. Please check the Video ID.');
+        }
+        
+        const data = await response.json();
+        
+    
+        await fetchChannelInfo(data.author_url);
+    } catch (error) {
+    } finally {
+    }
+}
+
+// Attempt to get channel info including subscriber count
+async function fetchChannelInfo(channelUrl: string | number | boolean) {
+    try {
+        // This is a workaround since we can't directly get subscriber count without API key
+        // We'll try to extract from the channel page (this might break if YouTube changes their HTML)
+        const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(channelUrl)}`);
+        const html = await response.text();
+        
+        // Try to find subscriber count in the HTML
+        const subscriberMatch = html.match(/"subscriberCountText":\{"simpleText":"([^"]+)"/);
+        let subscribers = "Not available";
+        
+        if (subscriberMatch && subscriberMatch[1]) {
+            subscribers = subscriberMatch[1];
+        }
+        
+        // Try to find channel description
+        const descriptionMatch = html.match(/"description":\{"simpleText":"([^"]+)"/);
+        let description = "Not available";
+        
+        if (descriptionMatch && descriptionMatch[1]) {
+            description = descriptionMatch[1].replace(/\\n/g, ' ');
+        }
+        
+    } catch (error) {
+        console.error('Error fetching channel info:', error);
+    }
+}
+
   useEffect(() => {
     const fetchChannel = async () => {
       try {
@@ -305,21 +377,7 @@ export default function ChannelDetailPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="text-center">
-                <p className="text-sm text-gray-500 mb-2">Total Clicks</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  {channel.clickCount}
-                </p>
-              </div>
 
-              <Button
-                onClick={handleTrackClick}
-                disabled={isTrackingClick || !session}
-                className="w-full flex items-center justify-center"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                {isTrackingClick ? 'Opening...' : 'Visit Channel'}
-              </Button>
 
               {channel.vid && (
                 <div className="mt-4">
