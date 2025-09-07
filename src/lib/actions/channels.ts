@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { channels, channelClicks, user } from '@/lib/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and,inArray } from 'drizzle-orm';
 import { ChannelFormData, ChannelWithDetails } from '@/types';
 
 export async function createChannel(data: ChannelFormData, userId: string) {
@@ -140,7 +140,66 @@ export async function getChannelById(id: string): Promise<ChannelWithDetails | n
     return null;
   }
 }
+export async function getChannelSupporters(channelId: string) {
+  // First, get all clicks with user data
+  const clicks = await db
+    .select({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      clickedAt: channelClicks.clickedAt,
+    })
+    .from(channelClicks)
+    .leftJoin(user, eq(channelClicks.userId, user.id))
+    .where(eq(channelClicks.channelId, channelId));
 
+  // Get all user IDs for batch querying
+  const userIds = clicks.map(click => click.user?.id).filter(Boolean) as string[];
+
+  if (userIds.length === 0) {
+    return [];
+  }
+
+  // Get channels for all users in a single query (more efficient)
+  const userChannels = await db
+    .select({
+      id: channels.id,
+      vid: channels.vid,
+      channelLink: channels.channelLink,
+      channelName: channels.channelName,
+      createdBy: channels.createdBy
+    })
+    .from(channels)
+    .where(inArray(channels.createdBy, userIds))
+    .orderBy(desc(channels.createdAt));
+
+  // Group channels by user ID for easy lookup
+  const channelsByUser = userChannels.reduce((acc, channel) => {
+    const userId = channel.createdBy;
+    if (!acc[userId]) {
+      acc[userId] = [];
+    }
+    acc[userId].push(channel);
+    return acc;
+  }, {} as Record<string, typeof userChannels>);
+
+  // Combine the data
+  const clickAndChannels = clicks.map(click => {
+    const userChannels = click.user?.id ? channelsByUser[click.user.id] || [] : [];
+    return {
+      ...click,
+      channels: userChannels
+    };
+  });
+
+  return clickAndChannels;
+}
 export async function updateChannel(id: string, data: Partial<ChannelFormData>, userId: string) {
   try {
     // Check if user owns the channel

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { getChannelById, trackChannelClick, updateChannel, deleteChannel } from '@/lib/actions/channels';
 import { ChannelWithDetails } from '@/types';
 import { ExternalLink, Users, Calendar, User, Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2, ThumbsUp, MessageSquare } from 'lucide-react';
-
+import { ChannelSupporters } from '@/components/ChannelSupporters';
 export default function ChannelDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -557,36 +557,7 @@ export default function ChannelDetailPage() {
               </div>
             )}
           </div>
-
-          {channel.clickedBy.length > 0 && (
-            <div className="border-t pt-8">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <Eye className="w-5 h-5 text-indigo-500" />
-                Users who support this channel ({channel.clickedBy.length})
-              </h3>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {channel.clickedBy.map((click, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {click.user?.name || 'Unknown User'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {formatDate(click.clickedAt)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          <ChannelSupporters channelId={channel.id} />
         </div>
       </main>
     </div>
