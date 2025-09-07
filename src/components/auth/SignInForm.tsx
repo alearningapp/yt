@@ -31,6 +31,8 @@ export function SignInForm() {
         setError(result.error.message || 'An error occurred');
       }
     } catch (err) {
+            console.error(err)
+
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -45,6 +47,8 @@ export function SignInForm() {
       // Google OAuth integration - to be implemented
       setError('Google sign-in not yet implemented');
     } catch (err) {
+            console.error(err)
+
       setError('Failed to sign in with Google');
       setIsLoading(false);
     }

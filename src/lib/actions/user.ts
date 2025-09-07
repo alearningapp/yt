@@ -3,7 +3,6 @@
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
 
 export async function updateUserProfile(userId: string, data: { name: string; email: string }) {
   try {
@@ -30,7 +29,7 @@ export async function changePassword(userId: string, currentPassword: string, ne
     // This would require additional database queries and password verification
     // For now, we'll just update the password (this is a simplified version)
     
-    const hashedPassword = await bcrypt.hash(newPassword, 12);
+   // const hashedPassword = await bcrypt.hash(newPassword, 12);
     
     // In a real implementation, you would update the password in the accounts table
     // or wherever passwords are stored in your auth system

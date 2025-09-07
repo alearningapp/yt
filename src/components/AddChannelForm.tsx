@@ -47,6 +47,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         setError(result.error || 'Failed to create channel');
       }
     } catch (err) {
+      console.error(err)
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);

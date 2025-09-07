@@ -25,8 +25,11 @@ const AuthContext = createContext<{
   authClient: typeof authClient;
   session: Session | null;
   isLoading: boolean;
-  signOut: () => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  signOut: () => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   signIn: (credentials: { email: string; password: string }) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   signUp: (credentials: { email: string; password: string; name: string }) => Promise<any>;
 }>({
   authClient,

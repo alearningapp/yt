@@ -7,12 +7,12 @@ import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/Button';
 import { getChannelById, trackChannelClick, updateChannel, deleteChannel } from '@/lib/actions/channels';
 import { ChannelWithDetails } from '@/types';
-import { ExternalLink, Users, Calendar, User, Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2, ThumbsUp, MessageSquare } from 'lucide-react';
+import { ExternalLink, Users,  Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2, ThumbsUp, MessageSquare } from 'lucide-react';
 import { ChannelSupporters } from '@/components/ChannelSupporters';
 export default function ChannelDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { session, authClient } = useAuth();
+  const { session } = useAuth();
   const [channel, setChannel] = useState<ChannelWithDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrackingClick, setIsTrackingClick] = useState(false);
@@ -25,6 +25,7 @@ export default function ChannelDetailPage() {
   });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [videoInfo, setVideoInfo] = useState<any>(null);
   const [isFetchingVideo, setIsFetchingVideo] = useState(false);
 

@@ -39,6 +39,8 @@ export function SignUpForm() {
         setError(result.error.message || 'An error occurred');
       }
     } catch (err) {
+            console.error(err)
+
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -53,6 +55,8 @@ export function SignUpForm() {
       // Google OAuth integration - to be implemented
       setError('Google sign-up not yet implemented');
     } catch (err) {
+            console.error(err)
+
       setError('Failed to sign up with Google');
       setIsLoading(false);
     }

@@ -98,6 +98,8 @@ export default function SettingsPage() {
         setError(result.error || 'Failed to change password');
       }
     } catch (err) {
+            console.error(err)
+
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -126,6 +128,8 @@ export default function SettingsPage() {
         setError(result.error || 'Failed to delete account');
       }
     } catch (err) {
+            console.error(err)
+
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);

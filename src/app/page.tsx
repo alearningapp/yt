@@ -9,7 +9,7 @@ import { getChannels } from '@/lib/actions/channels';
 import { ChannelWithDetails } from '@/types';
 
 export default function Home() {
-  const { session, authClient } = useAuth();
+  const { session } = useAuth();
   const [channels, setChannels] = useState<ChannelWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

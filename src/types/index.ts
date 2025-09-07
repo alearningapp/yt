@@ -1,10 +1,12 @@
-import { User, Channel, ChannelClick } from '@/lib/db/schema';
+import { Channel } from '@/lib/db/schema';
 
 export interface ChannelWithDetails extends Channel {
-  createdByUser: User | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createdByUser: any | null;
   clickCount: number;
   clickedBy: Array<{
-    user: User | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    user: any | null;
     clickedAt: Date;
   }>;
 }

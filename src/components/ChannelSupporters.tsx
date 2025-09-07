@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Calendar, Eye, ExternalLink } from 'lucide-react';
+import { User,  Eye, ExternalLink } from 'lucide-react';
 import { getChannelSupporters } from '@/lib/actions/channels';
 import { useEffect, useState } from 'react';
 
@@ -15,9 +15,7 @@ interface Supporter {
   user?: {
     id: string;
     name: string;
-    email: string;
     image?: string;
-    emailVerified?: Date | null;
     createdAt: Date;
     updatedAt: Date;
   };
@@ -50,7 +48,28 @@ export function ChannelSupporters({ channelId }: ChannelSupportersProps) {
   useEffect(() => {
     const fetchSupporters = async () => {
       const list = await getChannelSupporters(channelId);
-      setSupporters(list);
+      // Map the list to conform to the Supporter type
+      setSupporters(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        list.map((item: any) => ({
+          ...item,
+          user: item.user
+            ? {
+                id: item.user.id,
+                name: item.user.name ?? 'Unknown User',
+                image: item.user.image ?? undefined,
+                createdAt: item.user.createdAt,
+                updatedAt: item.user.updatedAt,
+              }
+            : undefined,
+          channels: item.channels.map((channel: any) => ({
+            id: channel.id,
+            vid: channel.vid,
+            channelLink: channel.channelLink,
+            channelName: channel.channelName,
+          })),
+        }))
+      );
     };
     fetchSupporters();
   }, [channelId]);
