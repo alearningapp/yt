@@ -27,6 +27,7 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
     const channelsWithDetails = await db
       .select({
         id: channels.id,
+        vid:channels.vid,
         channelLink: channels.channelLink,
         channelName: channels.channelName,
         description: channels.description,
@@ -88,6 +89,7 @@ export async function getChannelById(id: string): Promise<ChannelWithDetails | n
     const [channel] = await db
       .select({
         id: channels.id,
+        vid:channels.vid,
         channelLink: channels.channelLink,
         channelName: channels.channelName,
         description: channels.description,
@@ -159,6 +161,8 @@ export async function updateChannel(id: string, data: Partial<ChannelFormData>, 
       })
       .where(eq(channels.id, id))
       .returning();
+
+      
 
     return { success: true, channel: updatedChannel };
   } catch (error) {

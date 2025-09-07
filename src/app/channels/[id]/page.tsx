@@ -74,7 +74,10 @@ export default function ChannelDetailPage() {
     try {
       const result = await updateChannel(channelId, editData, channel.createdBy);
       if (result.success) {
-        setChannel(result.channel as ChannelWithDetails);
+       // setChannel(result.channel as ChannelWithDetails);
+       const updatedChannel = await getChannelById(channelId);
+       setChannel(updatedChannel);
+       
         setIsEditing(false);
       }
     } catch (error) {
