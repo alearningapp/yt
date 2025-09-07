@@ -77,11 +77,49 @@ export default function ChannelDetailPage() {
       
       const data = await response.json();
       setVideoInfo(data);
+      return data;
     } catch (error) {
       console.error('Error fetching video info:', error);
       setVideoInfo(null);
+      return null;
     } finally {
       setIsFetchingVideo(false);
+    }
+  };
+
+  // Function to update channel name based on video author
+  const updateChannelNameFromVideo = async (videoId: string) => {
+    if (!videoId) return;
+    
+    try {
+      const videoData = await fetchVideoInfo(videoId);
+      if (videoData && videoData.author_name) {
+        // Update the editData with the channel name from video author
+        setEditData(prev => ({
+          ...prev,
+          channelName: videoData.author_name
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating channel name from video:', error);
+    }
+  };
+
+  // Handle video ID change
+  const handleVideoIdChange = async (newVideoId: string) => {
+    setEditData(prev => ({ ...prev, vid: newVideoId }));
+    
+    // Extract the actual video ID from the input
+    const extractedId = extractVideoId(newVideoId);
+    
+    if (extractedId) {
+      // Update channel name based on the video author
+      await updateChannelNameFromVideo(extractedId);
+      
+      // Also fetch video info for display
+      fetchVideoInfo(extractedId);
+    } else {
+      setVideoInfo(null);
     }
   };
 
@@ -257,19 +295,31 @@ export default function ChannelDetailPage() {
             <div className="flex-1">
               {isEditing ? (
                 <div className="space-y-4">
-                  <input
-                    type="text"
-                    value={editData.channelName}
-                    onChange={(e) => setEditData(prev => ({ ...prev, channelName: e.target.value }))}
-                    className="text-3xl font-bold text-gray-900 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Channel Name"
-                  />
-                  <textarea
-                    value={editData.description}
-                    onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
-                    className="text-gray-600 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32"
-                    placeholder="Channel description"
-                  />
+                  <div>
+                    <label htmlFor="channelName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Channel Name
+                    </label>
+                    <input
+                      id="channelName"
+                      type="text"
+                      value={editData.channelName}
+                      onChange={(e) => setEditData(prev => ({ ...prev, channelName: e.target.value }))}
+                      className="text-3xl font-bold text-gray-900 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Channel Name"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      id="description"
+                      value={editData.description}
+                      onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
+                      className="text-gray-600 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32"
+                      placeholder="Channel description"
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -314,14 +364,14 @@ export default function ChannelDetailPage() {
                 <Button
                   onClick={handleTrackClick}
                   disabled={isTrackingClick}
-                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
+                  className="flex items-center gap-2 bg-yellow-500 text-white hover:bg-yellow-600"
                 >
                   {isTrackingClick ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Eye className="w-4 h-4" />
                   )}
-                  {isTrackingClick ? 'Tracking...' : 'Track Click'}
+                  {isTrackingClick ? 'Support...' : 'Support This Channel'}
                 </Button>
               )}
               
@@ -341,7 +391,16 @@ export default function ChannelDetailPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setIsEditing(false)}
+                    onClick={() => {
+                      setIsEditing(false);
+                      // Reset edit data to original values
+                      setEditData({
+                        channelName: channel.channelName,
+                        description: channel.description,
+                        subscriptionCount: channel.subscriptionCount,
+                        vid: channel.vid || '',
+                      });
+                    }}
                     className="flex items-center gap-2"
                   >
                     <X className="w-4 h-4" />
@@ -378,7 +437,7 @@ export default function ChannelDetailPage() {
                   </div>
 
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Total Clicks</span>
+                    <span className="text-gray-600">Total Supports</span>
                     <span className="text-lg font-semibold text-gray-900">
                       {channel.clickedBy.length}
                     </span>
@@ -400,26 +459,31 @@ export default function ChannelDetailPage() {
                 </div>
               </div>
 
-              {channel.vid && (
-                <div className="bg-gray-50 p-5 rounded-lg">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Video className="w-5 h-5 text-red-500" />
-                    Video Information
-                  </h3>
-                  
+              <div className="bg-gray-50 p-5 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <Video className="w-5 h-5 text-red-500" />
+                  Video Information
+                </h3>
+                
+                <div className="space-y-4">
                   <div className="flex justify-between items-center py-2">
-                    <span className="text-gray-600">Video ID</span>
+                    <span className="text-gray-600">Video ID/URL</span>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        value={editData.vid}
-                        onChange={(e) => setEditData(prev => ({ ...prev, vid: e.target.value }))}
-                        className="text-lg font-semibold text-gray-900 w-48 p-2 border border-gray-300 rounded-md text-right"
-                        placeholder="Enter video ID or URL"
-                      />
+                      <div className="flex flex-col items-end gap-2">
+                        <input
+                          type="text"
+                          value={editData.vid}
+                          onChange={(e) => handleVideoIdChange(e.target.value)}
+                          className="text-lg font-semibold text-gray-900 w-64 p-2 border border-gray-300 rounded-md text-right"
+                          placeholder="Enter video ID or URL"
+                        />
+                        <span className="text-xs text-gray-500">
+                          Enter a YouTube URL or video ID to auto-update channel name
+                        </span>
+                      </div>
                     ) : (
                       <span className="text-lg font-semibold text-gray-900">
-                        {videoId || 'Invalid ID'}
+                        {videoId || 'Not specified'}
                       </span>
                     )}
                   </div>
@@ -447,18 +511,20 @@ export default function ChannelDetailPage() {
                     </div>
                   )}
                   
-                  <div className="mt-4">
-                    <a
-                      href={`https://www.youtube.com/watch?v=${videoId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      Watch on YouTube <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
+                  {videoId && (
+                    <div className="mt-4">
+                      <a
+                        href={`https://www.youtube.com/watch?v=${videoId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Watch on YouTube <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             {videoId && (
@@ -496,7 +562,7 @@ export default function ChannelDetailPage() {
             <div className="border-t pt-8">
               <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
                 <Eye className="w-5 h-5 text-indigo-500" />
-                Users who clicked this channel ({channel.clickedBy.length})
+                Users who support this channel ({channel.clickedBy.length})
               </h3>
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
