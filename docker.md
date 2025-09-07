@@ -12,3 +12,6 @@ docker run --name my-postgres \
 
   #DATABASE_URL="postgresql://postgres:password@localhost:5432/helpyt"
 npm run db:push
+
+
+psql  -U postgresql -d helpyt
