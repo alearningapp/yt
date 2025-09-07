@@ -19,6 +19,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     channelName: '',
     description: '',
     subscriptionCount: 0,
+    vid: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,6 +39,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
           channelName: '',
           description: '',
           subscriptionCount: 0,
+          vid: '',
         });
         setIsOpen(false);
         onChannelAdded();
@@ -61,7 +63,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
 
   if (!isOpen) {
     return (
-      <Button onClick={() => setIsOpen(true)} className="mb-4 bg-gray-200">
+      <Button onClick={() => setIsOpen(true)} className="mb-4 bg-blue-200">
         <FaPlus className="mr-2" />
         Add New Channel
       </Button>
@@ -117,7 +119,18 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
             className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
-
+        <div>
+          <Label htmlFor="vid">Video ID</Label>
+          <Input
+            id="vid"
+            name="channelName"
+            type="text"
+            value={formData.vid}
+            onChange={handleChange}
+            placeholder="Enter Video ID"
+            required
+          />
+        </div>
         <div>
           <Label htmlFor="subscriptionCount">Current Subscriber Count</Label>
           <Input

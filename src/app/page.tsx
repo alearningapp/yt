@@ -38,7 +38,7 @@ export default function Home() {
             YouTube Channels
           </h1>
           <p className="text-gray-600">
-            Discover and share amazing YouTube channels with the community
+          Discover and share amazing startup YouTube channels with the community to help those channels grow.
           </p>
         </div>
 

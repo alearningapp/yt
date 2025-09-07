@@ -14,6 +14,7 @@ export interface ChannelFormData {
   channelName: string;
   description: string;
   subscriptionCount: number;
+  vid: string;
 }
 
 export interface UserSettings {

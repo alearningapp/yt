@@ -7,7 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/Button';
 import { getChannelById, trackChannelClick, updateChannel, deleteChannel } from '@/lib/actions/channels';
 import { ChannelWithDetails } from '@/types';
-import { ExternalLink, Users, Calendar, User, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { ExternalLink, Users, Calendar, User, Edit, Trash2, ArrowLeft, Video } from 'lucide-react';
 
 export default function ChannelDetailPage() {
   const params = useParams();
@@ -21,6 +21,7 @@ export default function ChannelDetailPage() {
     channelName: '',
     description: '',
     subscriptionCount: 0,
+    vid: '', // Added vid field
   });
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -36,6 +37,7 @@ export default function ChannelDetailPage() {
             channelName: data.channelName,
             description: data.description,
             subscriptionCount: data.subscriptionCount,
+            vid: data.vid || '', // Added vid
           });
         }
       } catch (error) {
@@ -259,6 +261,26 @@ export default function ChannelDetailPage() {
               </div>
 
               <div className="flex items-center">
+                <Video className="w-5 h-5 text-gray-400 mr-3" />
+                <div>
+                  <p className="text-sm text-gray-500">Video ID</p>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editData.vid}
+                      onChange={(e) => setEditData(prev => ({ ...prev, vid: e.target.value }))}
+                      className="text-lg font-semibold text-gray-900 w-full p-1 border rounded"
+                      placeholder="Enter video ID"
+                    />
+                  ) : (
+                    <p className="text-lg font-semibold text-gray-900">
+                      {channel.vid || 'Not specified'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center">
                 <Calendar className="w-5 h-5 text-gray-400 mr-3" />
                 <div>
                   <p className="text-sm text-gray-500">Added on</p>
@@ -295,6 +317,21 @@ export default function ChannelDetailPage() {
                 <ExternalLink className="w-4 h-4 mr-2" />
                 {isTrackingClick ? 'Opening...' : 'Visit Channel'}
               </Button>
+
+              {channel.vid && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500 mb-2">Video Preview</p>
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${channel.vid}`}
+                      className="w-full h-48"
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
