@@ -38,9 +38,7 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
         createdByUser: {
           id: user.id,
           name: user.name,
-          email: user.email,
           image: user.image,
-          emailVerified: user.emailVerified,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         },
@@ -57,9 +55,7 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
             user: {
               id: user.id,
               name: user.name,
-              email: user.email,
               image: user.image,
-              emailVerified: user.emailVerified,
               createdAt: user.createdAt,
               updatedAt: user.updatedAt,
             },
@@ -100,9 +96,7 @@ export async function getChannelById(id: string): Promise<ChannelWithDetails | n
         createdByUser: {
           id: user.id,
           name: user.name,
-          email: user.email,
           image: user.image,
-          emailVerified: user.emailVerified,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         },
@@ -118,9 +112,7 @@ export async function getChannelById(id: string): Promise<ChannelWithDetails | n
         user: {
           id: user.id,
           name: user.name,
-          email: user.email,
           image: user.image,
-          emailVerified: user.emailVerified,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         },
@@ -147,9 +139,7 @@ export async function getChannelSupporters(channelId: string) {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
         image: user.image,
-        emailVerified: user.emailVerified,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
