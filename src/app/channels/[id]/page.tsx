@@ -7,7 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/Button';
 import { getChannelById, trackChannelClick, updateChannel, deleteChannel } from '@/lib/actions/channels';
 import { ChannelWithDetails } from '@/types';
-import { ExternalLink, Users, Calendar, User, Edit, Trash2, ArrowLeft, Video } from 'lucide-react';
+import { ExternalLink, Users, Calendar, User, Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2 } from 'lucide-react';
 
 export default function ChannelDetailPage() {
   const params = useParams();
@@ -21,83 +21,12 @@ export default function ChannelDetailPage() {
     channelName: '',
     description: '',
     subscriptionCount: 0,
-    vid: '', // Added vid field
+    vid: '',
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const channelId = params.id as string;
-
-
-  function extractVideoId(url: string) {
-    if (!url.includes('youtube') && !url.includes('youtu.be')) {
-        return url; // Assume it's already a video ID
-    }
-    
-    const patterns = [
-        /(?:youtube\.com\/watch\?v=)([^&]+)/,
-        /(?:youtube\.com\/embed\/)([^?]+)/,
-        /(?:youtu\.be\/)([^?]+)/,
-        /(?:youtube\.com\/v\/)([^?]+)/,
-        /(?:youtube\.com\/watch\?.*v=)([^&]+)/
-    ];
-    
-    for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match && match[1]) {
-            return match[1];
-        }
-    }
-    
-    return null;
-}
-
-// Fetch video info using oEmbed API
-async function fetchVideoInfo(videoId: any) {
-    try {
-        
-        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-        
-        if (!response.ok) {
-            throw new Error('Video not found or unavailable. Please check the Video ID.');
-        }
-        
-        const data = await response.json();
-        
-    
-        await fetchChannelInfo(data.author_url);
-    } catch (error) {
-    } finally {
-    }
-}
-
-// Attempt to get channel info including subscriber count
-async function fetchChannelInfo(channelUrl: string | number | boolean) {
-    try {
-        // This is a workaround since we can't directly get subscriber count without API key
-        // We'll try to extract from the channel page (this might break if YouTube changes their HTML)
-        const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(channelUrl)}`);
-        const html = await response.text();
-        
-        // Try to find subscriber count in the HTML
-        const subscriberMatch = html.match(/"subscriberCountText":\{"simpleText":"([^"]+)"/);
-        let subscribers = "Not available";
-        
-        if (subscriberMatch && subscriberMatch[1]) {
-            subscribers = subscriberMatch[1];
-        }
-        
-        // Try to find channel description
-        const descriptionMatch = html.match(/"description":\{"simpleText":"([^"]+)"/);
-        let description = "Not available";
-        
-        if (descriptionMatch && descriptionMatch[1]) {
-            description = descriptionMatch[1].replace(/\\n/g, ' ');
-        }
-        
-    } catch (error) {
-        console.error('Error fetching channel info:', error);
-    }
-}
 
   useEffect(() => {
     const fetchChannel = async () => {
@@ -109,7 +38,7 @@ async function fetchChannelInfo(channelUrl: string | number | boolean) {
             channelName: data.channelName,
             description: data.description,
             subscriptionCount: data.subscriptionCount,
-            vid: data.vid || '', // Added vid
+            vid: data.vid || '',
           });
         }
       } catch (error) {
@@ -129,7 +58,6 @@ async function fetchChannelInfo(channelUrl: string | number | boolean) {
     try {
       const result = await trackChannelClick(channelId, session.user?.id || '');
       if (result.success) {
-        // Refresh channel data to show updated click count
         const updatedChannel = await getChannelById(channelId);
         setChannel(updatedChannel);
       }
@@ -143,22 +71,23 @@ async function fetchChannelInfo(channelUrl: string | number | boolean) {
   const handleUpdate = async () => {
     if (!channel) return;
 
+    setIsUpdating(true);
     try {
       const result = await updateChannel(channelId, editData, channel.createdBy);
       if (result.success) {
-       // setChannel(result.channel as ChannelWithDetails);
-       const updatedChannel = await getChannelById(channelId);
-       setChannel(updatedChannel);
-       
+        const updatedChannel = await getChannelById(channelId);
+        setChannel(updatedChannel);
         setIsEditing(false);
       }
     } catch (error) {
       console.error('Error updating channel:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!channel || !confirm('Are you sure you want to delete this channel?')) return;
+    if (!channel || !confirm('Are you sure you want to delete this channel? This action cannot be undone.')) return;
 
     setIsDeleting(true);
     try {
@@ -239,184 +168,238 @@ async function fetchChannelInfo(channelUrl: string | number | boolean) {
           <Button
             variant="outline"
             onClick={() => router.push('/')}
-            className="mb-4"
+            className="mb-4 flex items-center gap-2"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4" />
             Back to Channels
           </Button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <div className="flex justify-between items-start mb-6">
+        <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-6">
             <div className="flex-1">
               {isEditing ? (
-                <input
-                  type="text"
-                  value={editData.channelName}
-                  onChange={(e) => setEditData(prev => ({ ...prev, channelName: e.target.value }))}
-                  className="text-3xl font-bold text-gray-900 mb-2 w-full p-2 border rounded"
-                />
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={editData.channelName}
+                    onChange={(e) => setEditData(prev => ({ ...prev, channelName: e.target.value }))}
+                    className="text-3xl font-bold text-gray-900 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Channel Name"
+                  />
+                  <textarea
+                    value={editData.description}
+                    onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
+                    className="text-gray-600 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-32"
+                    placeholder="Channel description"
+                  />
+                </div>
               ) : (
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {channel.channelName}
-                </h1>
-              )}
-              
-              {isEditing ? (
-                <textarea
-                  value={editData.description}
-                  onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
-                  className="text-gray-600 mb-4 w-full p-2 border rounded h-24"
-                />
-              ) : (
-                <p className="text-gray-600 mb-4">
-                  {channel.description}
-                </p>
+                <div className="space-y-3">
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {channel.channelName}
+                  </h1>
+                  <p className="text-gray-600 text-lg">
+                    {channel.description}
+                  </p>
+                </div>
               )}
             </div>
 
-            <div className="flex space-x-2 ml-4">
+            <div className="flex flex-wrap gap-2">
               {isOwner && !isEditing && (
                 <>
                   <Button
                     variant="outline"
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center"
+                    className="flex items-center gap-2"
                   >
-                    <Edit className="w-4 h-4 mr-2" />
+                    <Edit className="w-4 h-4" />
                     Edit
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="flex items-center"
+                    className="flex items-center gap-2"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
+                    {isDeleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
                     {isDeleting ? 'Deleting...' : 'Delete'}
+                  </Button>
+                  <Button
+                    onClick={handleTrackClick}
+                    disabled={isTrackingClick}
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {isTrackingClick ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                    {isTrackingClick ? 'Tracking...' : 'Track Click'}
                   </Button>
                 </>
               )}
               
               {isEditing && (
-                <>
-                  <Button onClick={handleUpdate} className="flex items-center">
-                    Save
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleUpdate} 
+                    disabled={isUpdating}
+                    className="flex items-center gap-2"
+                  >
+                    {isUpdating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {isUpdating ? 'Saving...' : 'Save Changes'}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => setIsEditing(false)}
+                    className="flex items-center gap-2"
                   >
+                    <X className="w-4 h-4" />
                     Cancel
                   </Button>
-                </>
+                </div>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <Users className="w-5 h-5 text-gray-400 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Subscribers</p>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      value={editData.subscriptionCount}
-                      onChange={(e) => setEditData(prev => ({ ...prev, subscriptionCount: parseInt(e.target.value) || 0 }))}
-                      className="text-lg font-semibold text-gray-900 w-full p-1 border rounded"
-                    />
-                  ) : (
-                    <p className="text-lg font-semibold text-gray-900">
-                      {formatNumber(channel.subscriptionCount)}
-                    </p>
-                  )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-5 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-500" />
+                  Channel Statistics
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Subscribers</span>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editData.subscriptionCount}
+                        onChange={(e) => setEditData(prev => ({ ...prev, subscriptionCount: parseInt(e.target.value) || 0 }))}
+                        className="text-lg font-semibold text-gray-900 w-32 p-2 border border-gray-300 rounded-md text-right"
+                      />
+                    ) : (
+                      <span className="text-lg font-semibold text-gray-900">
+                        {formatNumber(channel.subscriptionCount)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Total Clicks</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {channel.clickedBy.length}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Added on</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {formatDate(channel.createdAt)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-600">Added by</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {channel.createdByUser?.name || 'Unknown User'}
+                    </span>
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-center">
-                <Video className="w-5 h-5 text-gray-400 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Video ID</p>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editData.vid}
-                      onChange={(e) => setEditData(prev => ({ ...prev, vid: e.target.value }))}
-                      className="text-lg font-semibold text-gray-900 w-full p-1 border rounded"
-                      placeholder="Enter video ID"
-                    />
-                  ) : (
-                    <p className="text-lg font-semibold text-gray-900">
-                      {channel.vid || 'Not specified'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <Calendar className="w-5 h-5 text-gray-400 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Added on</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {formatDate(channel.createdAt)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <User className="w-5 h-5 text-gray-400 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Added by</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {channel.createdByUser?.name || 'Unknown User'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-
 
               {channel.vid && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-500 mb-2">Video Preview</p>
-                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${channel.vid}`}
-                      className="w-full h-48"
-                      title="YouTube video player"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                <div className="bg-gray-50 p-5 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Video className="w-5 h-5 text-red-500" />
+                    Video Information
+                  </h3>
+                  
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-600">Video ID</span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editData.vid}
+                        onChange={(e) => setEditData(prev => ({ ...prev, vid: e.target.value }))}
+                        className="text-lg font-semibold text-gray-900 w-48 p-2 border border-gray-300 rounded-md text-right"
+                        placeholder="Enter video ID"
+                      />
+                    ) : (
+                      <span className="text-lg font-semibold text-gray-900">
+                        {channel.vid}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4">
+                    <a
+                      href={`https://www.youtube.com/watch?v=${channel.vid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Watch on YouTube <ExternalLink className="w-4 h-4" />
+                    </a>
                   </div>
                 </div>
               )}
             </div>
+
+            {channel.vid && (
+              <div className="bg-gray-50 p-5 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Video Preview</h3>
+                <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden shadow-md">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${channel.vid}`}
+                    className="w-full h-72"
+                    title="YouTube video player"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {channel.clickedBy.length > 0 && (
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="border-t pt-8">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Eye className="w-5 h-5 text-indigo-500" />
                 Users who clicked this channel ({channel.clickedBy.length})
               </h3>
-              <div className="space-y-2">
-                {channel.clickedBy.map((click, index) => (
-                  <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                        <User className="w-4 h-4 text-blue-600" />
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {channel.clickedBy.map((click, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {click.user?.name || 'Unknown User'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatDate(click.clickedAt)}
+                          </p>
+                        </div>
                       </div>
-                      <span className="font-medium text-gray-900">
-                        {click.user?.name || 'Unknown User'}
-                      </span>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {formatDate(click.clickedAt)}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
