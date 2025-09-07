@@ -7,7 +7,7 @@ import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/Button';
 import { getChannelById, trackChannelClick, updateChannel, deleteChannel } from '@/lib/actions/channels';
 import { ChannelWithDetails } from '@/types';
-import { ExternalLink, Users, Calendar, User, Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2 } from 'lucide-react';
+import { ExternalLink, Users, Calendar, User, Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2, ThumbsUp, MessageSquare } from 'lucide-react';
 
 export default function ChannelDetailPage() {
   const params = useParams();
@@ -25,8 +25,65 @@ export default function ChannelDetailPage() {
   });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [videoInfo, setVideoInfo] = useState<any>(null);
+  const [isFetchingVideo, setIsFetchingVideo] = useState(false);
 
   const channelId = params.id as string;
+
+  // Function to extract video ID from URL
+  function extractVideoId(url: string) {
+    if (!url) return null;
+    
+    // If it's already a video ID format (no special characters except maybe underscores)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+      return url;
+    }
+    
+    if (!url.includes('youtube') && !url.includes('youtu.be')) {
+      return null;
+    }
+    
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=)([^&]+)/,
+      /(?:youtube\.com\/embed\/)([^?]+)/,
+      /(?:youtu\.be\/)([^?]+)/,
+      /(?:youtube\.com\/v\/)([^?]+)/,
+      /(?:youtube\.com\/watch\?.*v=)([^&]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  }
+
+  // Fetch video info using oEmbed API
+  const fetchVideoInfo = async (videoId: string) => {
+    if (!videoId) return;
+    
+    setIsFetchingVideo(true);
+    try {
+      const response = await fetch(
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Video not found or unavailable');
+      }
+      
+      const data = await response.json();
+      setVideoInfo(data);
+    } catch (error) {
+      console.error('Error fetching video info:', error);
+      setVideoInfo(null);
+    } finally {
+      setIsFetchingVideo(false);
+    }
+  };
 
   useEffect(() => {
     const fetchChannel = async () => {
@@ -40,6 +97,14 @@ export default function ChannelDetailPage() {
             subscriptionCount: data.subscriptionCount,
             vid: data.vid || '',
           });
+          
+          // Fetch video info if there's a video ID
+          if (data.vid) {
+            const extractedId = extractVideoId(data.vid);
+            if (extractedId) {
+              fetchVideoInfo(extractedId);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching channel:', error);
@@ -77,6 +142,17 @@ export default function ChannelDetailPage() {
       if (result.success) {
         const updatedChannel = await getChannelById(channelId);
         setChannel(updatedChannel);
+        
+        // Refetch video info if video ID was changed
+        if (editData.vid !== channel.vid) {
+          const extractedId = extractVideoId(editData.vid);
+          if (extractedId) {
+            fetchVideoInfo(extractedId);
+          } else {
+            setVideoInfo(null);
+          }
+        }
+        
         setIsEditing(false);
       }
     } catch (error) {
@@ -158,6 +234,7 @@ export default function ChannelDetailPage() {
   }
 
   const isOwner = session?.user?.id === channel.createdBy;
+  const videoId = extractVideoId(channel.vid || '');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -230,19 +307,22 @@ export default function ChannelDetailPage() {
                     )}
                     {isDeleting ? 'Deleting...' : 'Delete'}
                   </Button>
-                  <Button
-                    onClick={handleTrackClick}
-                    disabled={isTrackingClick}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    {isTrackingClick ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                    {isTrackingClick ? 'Tracking...' : 'Track Click'}
-                  </Button>
                 </>
+              )}
+              
+              {!isEditing && (
+                <Button
+                  onClick={handleTrackClick}
+                  disabled={isTrackingClick}
+                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {isTrackingClick ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                  {isTrackingClick ? 'Tracking...' : 'Track Click'}
+                </Button>
               )}
               
               {isEditing && (
@@ -335,18 +415,41 @@ export default function ChannelDetailPage() {
                         value={editData.vid}
                         onChange={(e) => setEditData(prev => ({ ...prev, vid: e.target.value }))}
                         className="text-lg font-semibold text-gray-900 w-48 p-2 border border-gray-300 rounded-md text-right"
-                        placeholder="Enter video ID"
+                        placeholder="Enter video ID or URL"
                       />
                     ) : (
                       <span className="text-lg font-semibold text-gray-900">
-                        {channel.vid}
+                        {videoId || 'Invalid ID'}
                       </span>
                     )}
                   </div>
                   
+                  {videoInfo && !isEditing && (
+                    <div className="mt-4 space-y-3 p-3 bg-white rounded-md border border-gray-200">
+                      <h4 className="font-medium text-gray-800">{videoInfo.title}</h4>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <ThumbsUp className="w-4 h-4" /> 
+                          {videoInfo.author_name}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="w-4 h-4" />
+                          {videoInfo.provider_name}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {isFetchingVideo && (
+                    <div className="mt-4 flex justify-center items-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                      <span className="ml-2 text-gray-600">Loading video info...</span>
+                    </div>
+                  )}
+                  
                   <div className="mt-4">
                     <a
-                      href={`https://www.youtube.com/watch?v=${channel.vid}`}
+                      href={`https://www.youtube.com/watch?v=${videoId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
@@ -358,18 +461,33 @@ export default function ChannelDetailPage() {
               )}
             </div>
 
-            {channel.vid && (
+            {videoId && (
               <div className="bg-gray-50 p-5 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Video Preview</h3>
-                <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden shadow-md">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${channel.vid}`}
-                    className="w-full h-72"
-                    title="YouTube video player"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  {videoInfo ? videoInfo.title : 'Video Preview'}
+                </h3>
+                
+                {isFetchingVideo ? (
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                  </div>
+                ) : (
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-200 rounded-lg overflow-hidden shadow-md">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      className="w-full h-72"
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+                
+                {videoInfo && (
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p>By {videoInfo.author_name}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
