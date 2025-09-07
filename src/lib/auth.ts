@@ -24,7 +24,13 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    // Default session expiration (when "Remember Me" is NOT checked)
+    expiresIn: 60 * 60 * 24, // 1 day
+    
+    // Long session expiration (when "Remember Me" is checked)
+    longSessionExpiresIn: 60 * 60 * 24 * 30, // 30 days
+    
+    // How often to update the session
     updateAge: 60 * 60 * 24, // 1 day
   },
   user: {

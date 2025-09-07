@@ -10,11 +10,11 @@ import Link from 'next/link';
 export function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const {signIn } = useAuth();
-
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,14 +25,14 @@ export function SignInForm() {
       const result = await signIn({
         email,
         password,
+        rememberMe,
       });
 
       if (result.error) {
         setError(result.error.message || 'An error occurred');
       }
     } catch (err) {
-            console.error(err)
-
+      console.error(err);
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -47,8 +47,7 @@ export function SignInForm() {
       // Google OAuth integration - to be implemented
       setError('Google sign-in not yet implemented');
     } catch (err) {
-            console.error(err)
-
+      console.error(err);
       setError('Failed to sign in with Google');
       setIsLoading(false);
     }
@@ -88,6 +87,23 @@ export function SignInForm() {
               required
               className="w-full"
             />
+          </div>
+
+          {/* Remember Me Checkbox */}
+          <div className="flex items-center space-x-2">
+            <input
+              id="rememberMe"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <Label
+              htmlFor="rememberMe"
+              className="text-sm font-medium leading-none"
+            >
+              Remember me
+            </Label>
           </div>
 
           <Button
@@ -139,7 +155,7 @@ export function SignInForm() {
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-            Don&apos;t have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/signup" className="text-blue-600 hover:text-blue-500">
             Sign up
           </Link>
