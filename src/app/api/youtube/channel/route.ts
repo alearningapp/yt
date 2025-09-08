@@ -1,4 +1,3 @@
-// app/api/youtube/channel/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -13,12 +12,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // You'll need to implement the actual YouTube API call here
-    // This is a placeholder implementation
     const channelData = await fetchYouTubeChannelData(videoId);
     
     return NextResponse.json(channelData);
   } catch (error) {
+    console.error('Error fetching channel data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch channel data' },
       { status: 500 }
@@ -27,9 +25,12 @@ export async function GET(request: NextRequest) {
 }
 
 async function fetchYouTubeChannelData(videoId: string) {
-  // Implement actual YouTube Data API v3 call
-  // You'll need a YouTube API key
   const API_KEY = process.env.YOUTUBE_API_KEY;
+  
+  if (!API_KEY) {
+    throw new Error('YouTube API key not configured');
+  }
+
   // First get video details to get channel ID
   const videoResponse = await fetch(
     `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${API_KEY}`
@@ -42,10 +43,11 @@ async function fetchYouTubeChannelData(videoId: string) {
   }
   
   const channelId = videoData.items[0].snippet.channelId;
+  const channelTitle = videoData.items[0].snippet.channelTitle;
   
-  // Then get channel details
+  // Get channel details including custom URL
   const channelResponse = await fetch(
-    `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${API_KEY}`
+    `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&id=${channelId}&key=${API_KEY}`
   );
   
   const channelData = await channelResponse.json();
@@ -56,10 +58,34 @@ async function fetchYouTubeChannelData(videoId: string) {
   
   const channel = channelData.items[0];
   
+  // Determine the best channel link to use
+  let channelLink = `https://www.youtube.com/channel/${channelId}`; // fallback
+  
+  // Check for custom URL in brandingSettings
+  if (channel.brandingSettings?.channel?.customUrl) {
+    const customUrl = channel.brandingSettings.channel.customUrl;
+    channelLink = `https://www.youtube.com/${customUrl}`;
+  }
+  // Alternatively, you can construct from channel title (less reliable)
+  else if (channelTitle) {
+    // Convert to handle format (remove spaces, special chars, etc.)
+    const handle = channelTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .trim();
+    
+    if (handle) {
+      channelLink = `https://www.youtube.com/@${handle}`;
+    }
+  }
+  
   return {
-    channelLink: `https://www.youtube.com/channel/${channelId}`,
+    channelLink,
+    channelId,
     channelName: channel.snippet.title,
     description: channel.snippet.description,
     subscriptionCount: parseInt(channel.statistics.subscriberCount),
+    customUrl: channel.brandingSettings?.channel?.customUrl || null,
+    thumbnail: channel.snippet.thumbnails?.default?.url || null
   };
 }
