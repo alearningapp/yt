@@ -15,3 +15,5 @@ npm run db:push
 
 
 psql  -U postgresql -d helpyt
+
+export https_proxy=socks5://127.0.0.1:2080
