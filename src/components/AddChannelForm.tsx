@@ -55,15 +55,43 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     return channelRegex.test(link);
   };
 
+  // Extract video ID from various YouTube URL formats
+  const extractVideoId = (input: string): string | null => {
+    // Handle direct video ID
+    if (isValidYouTubeVideoId(input)) {
+      return input;
+    }
+    
+    // Handle various YouTube URL formats
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/watch\?.*&v=)([a-zA-Z0-9_-]{11})/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = input.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  };
+
   // Validate form data
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
 
-    // Validate video ID
+    // Validate video input (could be ID or URL)
     if (!formData.vid.trim()) {
-      errors.vid = 'Video ID is required';
-    } else if (!isValidYouTubeVideoId(formData.vid)) {
-      errors.vid = 'Please enter a valid YouTube Video ID (11 characters)';
+      errors.vid = 'Video ID or URL is required';
+    } else {
+      const videoId = extractVideoId(formData.vid);
+      if (!videoId) {
+        errors.vid = 'Please enter a valid YouTube Video ID or URL';
+      }
     }
 
     if (showFullForm) {
@@ -112,9 +140,11 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   }, [formData]);
 
   // Fetch channel data from YouTube API
-  const fetchChannelData = async (videoId: string) => {
-    if (!isValidYouTubeVideoId(videoId)) {
-      setValidationErrors({ vid: 'Please enter a valid YouTube Video ID' });
+  const fetchChannelData = async (input: string) => {
+    const videoId = extractVideoId(input);
+    
+    if (!videoId) {
+      setValidationErrors({ vid: 'Please enter a valid YouTube Video ID or URL' });
       return;
     }
 
@@ -147,14 +177,20 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     }
   };
 
-  // Handle video ID input with debounce
+  // Handle video ID/URL input with debounce
   useEffect(() => {
-    if (formData.vid.trim().length === 11 && isValidYouTubeVideoId(formData.vid)) {
-      const timer = setTimeout(() => {
-        fetchChannelData(formData.vid);
-      }, 1000); // 1 second debounce
+    const input = formData.vid.trim();
+    
+    if (input) {
+      const videoId = extractVideoId(input);
       
-      return () => clearTimeout(timer);
+      if (videoId && isValidYouTubeVideoId(videoId)) {
+        const timer = setTimeout(() => {
+          fetchChannelData(input);
+        }, 1000); // 1 second debounce
+        
+        return () => clearTimeout(timer);
+      }
     }
   }, [formData.vid]);
 
@@ -242,7 +278,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <Label htmlFor="vid">YouTube Video ID</Label>
+          <Label htmlFor="vid">YouTube Video ID or URL</Label>
           <div className="relative">
             <Input
               id="vid"
@@ -250,11 +286,10 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
               type="text"
               value={formData.vid}
               onChange={handleChange}
-              placeholder="Enter YouTube Video ID (e.g., dQw4w9WgXcQ)"
+              placeholder="Enter YouTube Video ID or URL (e.g., dQw4w9WgXcQ or https://youtube.com/watch?v=dQw4w9WgXcQ)"
               required
               disabled={isFetching}
               className="pr-10"
-              maxLength={11}
             />
             {isFetching && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -266,7 +301,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
             <p className="text-sm text-red-500 mt-1">{validationErrors.vid}</p>
           )}
           <p className="text-sm text-gray-500 mt-1">
-            Enter any video ID from the channel you want to add (11 characters)
+            Enter any video ID or URL from the channel you want to add
           </p>
         </div>
 
