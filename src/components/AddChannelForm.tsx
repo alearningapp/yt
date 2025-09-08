@@ -20,6 +20,14 @@ interface YouTubeChannelData {
   subscriptionCount: number;
 }
 
+interface ValidationErrors {
+  vid?: string;
+  channelLink?: string;
+  channelName?: string;
+  description?: string;
+  subscriptionCount?: string;
+}
+
 export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) {
   const [formData, setFormData] = useState<ChannelFormData>({
     channelLink: '',
@@ -33,11 +41,86 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   const [error, setError] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [showFullForm, setShowFullForm] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+
+  // YouTube video ID validation regex
+  const isValidYouTubeVideoId = (id: string): boolean => {
+    const youtubeRegex = /^[a-zA-Z0-9_-]{11}$/;
+    return youtubeRegex.test(id);
+  };
+
+  // YouTube channel link validation
+  const isValidYouTubeChannelLink = (link: string): boolean => {
+    const channelRegex = /^(https?:\/\/)?(www\.)?youtube\.com\/(@[a-zA-Z0-9_-]+|c\/[a-zA-Z0-9_-]+|channel\/[a-zA-Z0-9_-]+)/i;
+    return channelRegex.test(link);
+  };
+
+  // Validate form data
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+
+    // Validate video ID
+    if (!formData.vid.trim()) {
+      errors.vid = 'Video ID is required';
+    } else if (!isValidYouTubeVideoId(formData.vid)) {
+      errors.vid = 'Please enter a valid YouTube Video ID (11 characters)';
+    }
+
+    if (showFullForm) {
+      // Validate channel link
+      if (!formData.channelLink.trim()) {
+        errors.channelLink = 'Channel link is required';
+      } else if (!isValidYouTubeChannelLink(formData.channelLink)) {
+        errors.channelLink = 'Please enter a valid YouTube channel link';
+      }
+
+      // Validate channel name
+      if (!formData.channelName.trim()) {
+        errors.channelName = 'Channel name is required';
+      } else if (formData.channelName.length < 2) {
+        errors.channelName = 'Channel name must be at least 2 characters long';
+      } else if (formData.channelName.length > 100) {
+        errors.channelName = 'Channel name must be less than 100 characters';
+      }
+
+      // Validate description
+      if (!formData.description.trim()) {
+        errors.description = 'Description is required';
+      } else if (formData.description.length < 10) {
+        errors.description = 'Description must be at least 10 characters long';
+      } else if (formData.description.length > 500) {
+        errors.description = 'Description must be less than 500 characters';
+      }
+
+      // Validate subscription count
+      if (formData.subscriptionCount < 0) {
+        errors.subscriptionCount = 'Subscriber count cannot be negative';
+      } else if (formData.subscriptionCount > 1000000000) {
+        errors.subscriptionCount = 'Please enter a valid subscriber count';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Clear validation errors when form data changes
+  useEffect(() => {
+    if (Object.keys(validationErrors).length > 0) {
+      setValidationErrors({});
+    }
+  }, [formData]);
 
   // Fetch channel data from YouTube API
   const fetchChannelData = async (videoId: string) => {
+    if (!isValidYouTubeVideoId(videoId)) {
+      setValidationErrors({ vid: 'Please enter a valid YouTube Video ID' });
+      return;
+    }
+
     setIsFetching(true);
     setError('');
+    setValidationErrors({});
     
     try {
       const response = await fetch(`/api/youtube/channel?videoId=${videoId}`);
@@ -66,7 +149,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
 
   // Handle video ID input with debounce
   useEffect(() => {
-    if (formData.vid.trim().length >= 11) { // YouTube video IDs are usually 11 characters
+    if (formData.vid.trim().length === 11 && isValidYouTubeVideoId(formData.vid)) {
       const timer = setTimeout(() => {
         fetchChannelData(formData.vid);
       }, 1000); // 1 second debounce
@@ -77,6 +160,12 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -93,6 +182,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         });
         setShowFullForm(false);
         setIsOpen(false);
+        setValidationErrors({});
         onChannelAdded();
       } else {
         setError(result.error || 'Failed to create channel');
@@ -115,6 +205,20 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
 
   const handleManualEdit = () => {
     setShowFullForm(true);
+  };
+
+  const handleCancel = () => {
+    setIsOpen(false);
+    setShowFullForm(false);
+    setFormData({
+      channelLink: '',
+      channelName: '',
+      description: '',
+      subscriptionCount: 0,
+      vid: '',
+    });
+    setValidationErrors({});
+    setError('');
   };
 
   if (!isOpen) {
@@ -150,6 +254,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
               required
               disabled={isFetching}
               className="pr-10"
+              maxLength={11}
             />
             {isFetching && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -157,8 +262,11 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
               </div>
             )}
           </div>
+          {validationErrors.vid && (
+            <p className="text-sm text-red-500 mt-1">{validationErrors.vid}</p>
+          )}
           <p className="text-sm text-gray-500 mt-1">
-            Enter any video ID from the channel you want to add
+            Enter any video ID from the channel you want to add (11 characters)
           </p>
         </div>
 
@@ -175,6 +283,9 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 placeholder="https://www.youtube.com/@channelname"
                 required
               />
+              {validationErrors.channelLink && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.channelLink}</p>
+              )}
             </div>
 
             <div>
@@ -187,7 +298,11 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 onChange={handleChange}
                 placeholder="Enter channel name"
                 required
+                maxLength={100}
               />
+              {validationErrors.channelName && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.channelName}</p>
+              )}
             </div>
 
             <div>
@@ -199,8 +314,15 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 onChange={handleChange}
                 placeholder="Enter channel description"
                 required
+                maxLength={500}
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
+              {validationErrors.description && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.description}</p>
+              )}
+              <p className="text-sm text-gray-500 mt-1">
+                {formData.description.length}/500 characters
+              </p>
             </div>
 
             <div>
@@ -213,8 +335,12 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 onChange={handleChange}
                 placeholder="0"
                 min="0"
+                max="1000000000"
                 required
               />
+              {validationErrors.subscriptionCount && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.subscriptionCount}</p>
+              )}
             </div>
           </>
         )}
@@ -242,10 +368,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  setIsOpen(false);
-                  setShowFullForm(false);
-                }}
+                onClick={handleCancel}
                 className="flex-1 flex items-center justify-center gap-2"
               >
                 <FaTimes />
