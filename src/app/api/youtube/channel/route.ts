@@ -60,11 +60,13 @@ async function fetchYouTubeChannelData(videoId: string) {
   
   // Determine the best channel link to use
   let channelLink = `https://www.youtube.com/channel/${channelId}`; // fallback
+
+  let channelAlias = `${channelId}`;
   
   // Check for custom URL in brandingSettings
   if (channel.brandingSettings?.channel?.customUrl) {
     const customUrl = channel.brandingSettings.channel.customUrl;
-    channelLink = `https://www.youtube.com/${customUrl}`;
+    channelAlias = customUrl;
   }
   // Alternatively, you can construct from channel title (less reliable)
   else if (channelTitle) {
@@ -75,12 +77,14 @@ async function fetchYouTubeChannelData(videoId: string) {
       .trim();
     
     if (handle) {
-      channelLink = `https://www.youtube.com/@${handle}`;
+          channelAlias =`@${handle}`
+
     }
   }
   
   return {
     channelLink,
+    channelAlias,
     channelId,
     channelName: channel.snippet.title,
     description: channel.snippet.description,

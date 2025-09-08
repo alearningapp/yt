@@ -62,6 +62,7 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
         vid:channels.vid,
         channelLink: channels.channelLink,
         channelName: channels.channelName,
+        channelAlias: channels.channelAlias,
         description: channels.description,
         subscriptionCount: channels.subscriptionCount,
         createdAt: channels.createdAt,
@@ -104,7 +105,6 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
         };
       })
     );
-
     return channelsWithClicks;
   } catch (error) {
     console.error('Error fetching channels:', error);
@@ -120,6 +120,7 @@ export async function getChannelById(id: string): Promise<ChannelWithDetails | n
         vid:channels.vid,
         channelLink: channels.channelLink,
         channelName: channels.channelName,
+        channelAlias: channels.channelAlias,
         description: channels.description,
         subscriptionCount: channels.subscriptionCount,
         createdAt: channels.createdAt,

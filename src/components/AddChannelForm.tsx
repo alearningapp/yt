@@ -32,6 +32,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   const [formData, setFormData] = useState<ChannelFormData>({
     channelLink: '',
     channelName: '',
+    channelAlias: '',
     description: '',
     subscriptionCount: 0,
     vid: '',
@@ -212,6 +213,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         setFormData({
           channelLink: '',
           channelName: '',
+          channelAlias: '',
           description: '',
           subscriptionCount: 0,
           vid: '',
@@ -249,6 +251,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     setFormData({
       channelLink: '',
       channelName: '',
+      channelAlias: '',
       description: '',
       subscriptionCount: 0,
       vid: '',

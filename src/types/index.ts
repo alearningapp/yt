@@ -14,6 +14,7 @@ export interface ChannelWithDetails extends Channel {
 export interface ChannelFormData {
   channelLink: string;
   channelName: string;
+  channelAlias: string;
   description: string;
   subscriptionCount: number;
   vid: string;

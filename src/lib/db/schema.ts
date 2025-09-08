@@ -71,6 +71,7 @@ export const channels = pgTable('channel', {
   id: uuid('id').primaryKey().defaultRandom(),
   channelLink: text('channel_link').unique().notNull(),
   channelName: text('channel_name').notNull(),
+  channelAlias: text('channel_alias').unique().notNull(),
   vid: text('vid').notNull(),
   description: text('description').notNull(),
   subscriptionCount: integer('subscription_count').notNull().default(0),
