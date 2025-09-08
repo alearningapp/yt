@@ -67,7 +67,7 @@ export const verificationToken = pgTable('verificationToken', {
 });
 
 // Your custom tables can remain as-is
-export const channels = pgTable('channels', {
+export const channels = pgTable('channel', {
   id: uuid('id').primaryKey().defaultRandom(),
   channelLink: text('channel_link').notNull(),
   channelName: text('channel_name').notNull(),
@@ -79,7 +79,7 @@ export const channels = pgTable('channels', {
   createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' }), // Change to text reference
 });
 
-export const channelClicks = pgTable('channel_clicks', {
+export const channelClicks = pgTable('channel_click', {
   id: uuid('id').primaryKey().defaultRandom(),
   channelId: uuid('channel_id').notNull().references(() => channels.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }), // Change to text reference
