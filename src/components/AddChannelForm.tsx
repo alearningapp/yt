@@ -26,6 +26,7 @@ interface ValidationErrors {
   channelName?: string;
   description?: string;
   subscriptionCount?: string;
+  channelAlias?: string;
 }
 
 export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) {
@@ -168,6 +169,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         channelName: data.channelName,
         description: data.description,
         subscriptionCount: data.subscriptionCount,
+        channelAlias: data.channelAlias,
       }));
       
       setShowFullForm(true);
@@ -342,7 +344,22 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 <p className="text-sm text-red-500 mt-1">{validationErrors.channelName}</p>
               )}
             </div>
-
+            <div>
+              <Label htmlFor="channelAlias">channel Alias@</Label>
+              <Input
+                id="channelAlias"
+                name="channelAlias"
+                type="text"
+                value={formData.channelAlias}
+                onChange={handleChange}
+                placeholder="Enter channel name"
+                required
+                maxLength={100}
+              />
+              {validationErrors.channelAlias && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.channelAlias}</p>
+              )}
+            </div>
             <div>
               <Label htmlFor="description">Description</Label>
               <textarea
@@ -380,7 +397,6 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 <p className="text-sm text-red-500 mt-1">{validationErrors.subscriptionCount}</p>
               )}
             </div>
-            <Input type="hidden" name="channelAlias" value={formData.channelAlias} />
           </>
         )}
 
