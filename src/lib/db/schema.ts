@@ -69,7 +69,7 @@ export const verificationToken = pgTable('verificationToken', {
 // Your custom tables can remain as-is
 export const channels = pgTable('channel', {
   id: uuid('id').primaryKey().defaultRandom(),
-  channelLink: text('channel_link').notNull(),
+  channelLink: text('channel_link').unique().notNull(),
   channelName: text('channel_name').notNull(),
   vid: text('vid').notNull(),
   description: text('description').notNull(),

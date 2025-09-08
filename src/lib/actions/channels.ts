@@ -7,6 +7,20 @@ import { ChannelFormData, ChannelWithDetails } from '@/types';
 
 export async function createChannel(data: ChannelFormData, userId: string) {
   try {
+    // Check if channel with the same channelLink already exists
+    const existingChannel = await db
+      .select()
+      .from(channels)
+      .where(eq(channels.channelLink, data.channelLink))
+      .limit(1);
+
+    if (existingChannel.length > 0) {
+      return { 
+        success: false, 
+        error: 'Channel with this link already exists' 
+      };
+    }
+
     const [channel] = await db
       .insert(channels)
       .values({
@@ -18,6 +32,24 @@ export async function createChannel(data: ChannelFormData, userId: string) {
     return { success: true, channel };
   } catch (error) {
     console.error('Error creating channel:', error);
+    
+    // Handle unique constraint violation error (as a fallback)
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof (error as { message?: unknown }).message === 'string' &&
+      (
+        ((error as { message: string }).message.includes('unique')) ||
+        ((error as { message: string }).message.includes('duplicate'))
+      )
+    ) {
+      return { 
+        success: false, 
+        error: 'Channel with this link already exists' 
+      };
+    }
+    
     return { success: false, error: 'Failed to create channel' };
   }
 }
