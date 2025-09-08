@@ -380,6 +380,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 <p className="text-sm text-red-500 mt-1">{validationErrors.subscriptionCount}</p>
               )}
             </div>
+            <Input type="hidden" name="channelAlias" value={formData.channelAlias} />
           </>
         )}
 
