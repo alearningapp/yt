@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { ChannelFormData } from '@/types';
-import { FaPlus, FaTimes, FaSpinner, FaSearch, FaPlay } from 'react-icons/fa';
+import { FaPlus, FaTimes, FaSpinner, FaSearch, FaPlay, FaCheck } from 'react-icons/fa';
 
 interface AddChannelFormProps {
   userId: string;
@@ -46,6 +46,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [videoId, setVideoId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewSuccess, setPreviewSuccess] = useState(false);
 
   // YouTube video ID validation regex
   const isValidYouTubeVideoId = (id: string): boolean => {
@@ -87,8 +88,18 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   // Toggle video preview
   const togglePreview = () => {
     if (videoId) {
-      setShowPreview(!showPreview);
+      if (!showPreview) {
+        setShowPreview(true);
+      } else {
+        setShowPreview(false);
+        setPreviewSuccess(false);
+      }
     }
+  };
+
+  // Handle successful preview load
+  const handlePreviewLoad = () => {
+    setPreviewSuccess(true);
   };
 
   // Update videoId when formData.vid changes
@@ -96,7 +107,8 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     const extractedId = extractVideoId(formData.vid);
     setVideoId(extractedId);
     if (extractedId) {
-      setShowPreview(false); // Reset preview when video ID changes
+      setShowPreview(false);
+      setPreviewSuccess(false);
     }
   }, [formData.vid]);
 
@@ -194,22 +206,15 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     }
   };
 
-  // Handle video ID/URL input with debounce
-  useEffect(() => {
-    const input = formData.vid.trim();
-    
-    if (input) {
-      const videoId = extractVideoId(input);
-      
-      if (videoId && isValidYouTubeVideoId(videoId)) {
-        const timer = setTimeout(() => {
-          fetchChannelData(input);
-        }, 1000); // 1 second debounce
-        
-        return () => clearTimeout(timer);
-      }
+  // Manual trigger for fetching channel data after preview success
+  const handleFetchChannelData = async () => {
+    if (!previewSuccess) {
+      setError('Please verify the video preview first');
+      return;
     }
-  }, [formData.vid]);
+    
+    await fetchChannelData(formData.vid);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -239,6 +244,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         setValidationErrors({});
         setVideoId(null);
         setShowPreview(false);
+        setPreviewSuccess(false);
         onChannelAdded();
       } else {
         setError(result.error || 'Failed to create channel');
@@ -278,6 +284,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     setError('');
     setVideoId(null);
     setShowPreview(false);
+    setPreviewSuccess(false);
   };
 
   if (!isOpen) {
@@ -330,15 +337,33 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
           {/* Video Preview Section */}
           {videoId && (
             <div className="mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={togglePreview}
-                className="flex items-center gap-2 mb-2"
-              >
-                <FaPlay />
-                {showPreview ? 'Hide Preview' : 'Preview Video'}
-              </Button>
+              <div className="flex gap-2 mb-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={togglePreview}
+                  className="flex items-center gap-2"
+                >
+                  <FaPlay />
+                  {showPreview ? 'Hide Preview' : 'Preview Video'}
+                </Button>
+                
+                {showPreview && previewSuccess && (
+                  <Button
+                    type="button"
+                    onClick={handleFetchChannelData}
+                    disabled={isFetching}
+                    className="flex items-center gap-2 bg-green-500 text-white"
+                  >
+                    {isFetching ? (
+                      <FaSpinner className="animate-spin" />
+                    ) : (
+                      <FaCheck />
+                    )}
+                    Fetch Channel Data
+                  </Button>
+                )}
+              </div>
               
               {showPreview && (
                 <div className="mt-2">
@@ -349,10 +374,13 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                       className="w-full h-full rounded-md border"
+                      onLoad={handlePreviewLoad}
                     />
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
-                    Preview of the YouTube video
+                    {previewSuccess 
+                      ? 'Preview loaded successfully. Click "Fetch Channel Data" to continue.'
+                      : 'Loading preview...'}
                   </p>
                 </div>
               )}
