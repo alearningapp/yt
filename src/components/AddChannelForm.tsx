@@ -47,6 +47,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   const [videoId, setVideoId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewSuccess, setPreviewSuccess] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // YouTube video ID validation regex
   const isValidYouTubeVideoId = (id: string): boolean => {
@@ -85,30 +86,62 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     return null;
   };
 
-  // Toggle video preview
-  const togglePreview = () => {
-    if (videoId) {
-      if (!showPreview) {
-        setShowPreview(true);
-      } else {
-        setShowPreview(false);
-        setPreviewSuccess(false);
-      }
-    }
-  };
-
   // Handle successful preview load
   const handlePreviewLoad = () => {
     setPreviewSuccess(true);
+    setPreviewLoading(false);
   };
 
-  // Update videoId when formData.vid changes
+  // Handle preview error
+  const handlePreviewError = () => {
+    setPreviewSuccess(false);
+    setPreviewLoading(false);
+    setValidationErrors(prev => ({
+      ...prev,
+      vid: 'Failed to load video preview. Please check the video ID or URL.'
+    }));
+  };
+
+  // Update videoId when formData.vid changes and show preview immediately
   useEffect(() => {
-    const extractedId = extractVideoId(formData.vid);
-    setVideoId(extractedId);
-    if (extractedId) {
+    const input = formData.vid.trim();
+    
+    if (input) {
+      const extractedId = extractVideoId(input);
+      
+      if (extractedId) {
+        setVideoId(extractedId);
+        setShowPreview(true);
+        setPreviewLoading(true);
+        setPreviewSuccess(false);
+        
+        // Clear any previous video errors
+        setValidationErrors(prev => ({
+          ...prev,
+          vid: undefined
+        }));
+      } else {
+        setVideoId(null);
+        setShowPreview(false);
+        setPreviewSuccess(false);
+        setPreviewLoading(false);
+        
+        if (input.length > 0) {
+          setValidationErrors(prev => ({
+            ...prev,
+            vid: 'Please enter a valid YouTube Video ID or URL'
+          }));
+        }
+      }
+    } else {
+      setVideoId(null);
       setShowPreview(false);
       setPreviewSuccess(false);
+      setPreviewLoading(false);
+      setValidationErrors(prev => ({
+        ...prev,
+        vid: undefined
+      }));
     }
   }, [formData.vid]);
 
@@ -141,6 +174,15 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         errors.channelName = 'Channel name must be at least 2 characters long';
       } else if (formData.channelName.length > 100) {
         errors.channelName = 'Channel name must be less than 100 characters';
+      }
+
+      // Validate channel alias
+      if (!formData.channelAlias.trim()) {
+        errors.channelAlias = 'Channel alias is required';
+      } else if (formData.channelAlias.length < 2) {
+        errors.channelAlias = 'Channel alias must be at least 2 characters long';
+      } else if (formData.channelAlias.length > 100) {
+        errors.channelAlias = 'Channel alias must be less than 100 characters';
       }
 
       // Validate description
@@ -195,7 +237,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         channelName: data.channelName,
         description: data.description,
         subscriptionCount: data.subscriptionCount,
-        channelAlias: data.channelAlias,
+        channelAlias: data.channelAlias || data.channelName,
       }));
       
       setShowFullForm(true);
@@ -209,7 +251,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   // Manual trigger for fetching channel data after preview success
   const handleFetchChannelData = async () => {
     if (!previewSuccess) {
-      setError('Please verify the video preview first');
+      setError('Please wait for the video preview to load successfully first');
       return;
     }
     
@@ -245,6 +287,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         setVideoId(null);
         setShowPreview(false);
         setPreviewSuccess(false);
+        setPreviewLoading(false);
         onChannelAdded();
       } else {
         setError(result.error || 'Failed to create channel');
@@ -285,6 +328,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     setVideoId(null);
     setShowPreview(false);
     setPreviewSuccess(false);
+    setPreviewLoading(false);
   };
 
   if (!isOpen) {
@@ -334,21 +378,11 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
             Enter any video ID or URL from the channel you want to add
           </p>
           
-          {/* Video Preview Section */}
-          {videoId && (
+          {/* Video Preview Section - Always show when there's a valid videoId */}
+          {showPreview && videoId && (
             <div className="mt-4">
               <div className="flex gap-2 mb-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={togglePreview}
-                  className="flex items-center gap-2"
-                >
-                  <FaPlay />
-                  {showPreview ? 'Hide Preview' : 'Preview Video'}
-                </Button>
-                
-                {showPreview && previewSuccess && (
+                {previewSuccess && (
                   <Button
                     type="button"
                     onClick={handleFetchChannelData}
@@ -365,25 +399,31 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 )}
               </div>
               
-              {showPreview && (
-                <div className="mt-2">
-                  <div className="relative aspect-video max-w-2xl">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${videoId}`}
-                      title="YouTube video preview"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="w-full h-full rounded-md border"
-                      onLoad={handlePreviewLoad}
-                    />
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {previewSuccess 
-                      ? 'Preview loaded successfully. Click "Fetch Channel Data" to continue.'
-                      : 'Loading preview...'}
-                  </p>
+              <div className="mt-2">
+                <div className="relative aspect-video max-w-2xl">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${videoId}`}
+                    title="YouTube video preview"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full rounded-md border"
+                    onLoad={handlePreviewLoad}
+                    onError={handlePreviewError}
+                  />
+                  {previewLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50">
+                      <FaSpinner className="animate-spin text-gray-400 text-2xl" />
+                    </div>
+                  )}
                 </div>
-              )}
+                <p className="text-sm text-gray-500 mt-1">
+                  {previewLoading 
+                    ? 'Loading preview...'
+                    : previewSuccess 
+                      ? 'Preview loaded successfully. Click "Fetch Channel Data" to continue.'
+                      : 'Preview failed to load. Please check the video ID or URL.'}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -423,14 +463,14 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
               )}
             </div>
             <div>
-              <Label htmlFor="channelAlias">channel Alias@</Label>
+              <Label htmlFor="channelAlias">Channel Alias</Label>
               <Input
                 id="channelAlias"
                 name="channelAlias"
                 type="text"
                 value={formData.channelAlias}
                 onChange={handleChange}
-                placeholder="Enter channel name"
+                placeholder="Enter channel alias"
                 required
                 maxLength={100}
               />
