@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { ChannelFormData } from '@/types';
-import { FaPlus, FaTimes, FaSpinner, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaTimes, FaSpinner, FaSearch, FaPlay } from 'react-icons/fa';
 
 interface AddChannelFormProps {
   userId: string;
@@ -44,6 +44,8 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
   const [isOpen, setIsOpen] = useState(false);
   const [showFullForm, setShowFullForm] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // YouTube video ID validation regex
   const isValidYouTubeVideoId = (id: string): boolean => {
@@ -82,6 +84,22 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     return null;
   };
 
+  // Toggle video preview
+  const togglePreview = () => {
+    if (videoId) {
+      setShowPreview(!showPreview);
+    }
+  };
+
+  // Update videoId when formData.vid changes
+  useEffect(() => {
+    const extractedId = extractVideoId(formData.vid);
+    setVideoId(extractedId);
+    if (extractedId) {
+      setShowPreview(false); // Reset preview when video ID changes
+    }
+  }, [formData.vid]);
+
   // Validate form data
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
@@ -114,11 +132,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
       }
 
       // Validate description
-      /*if (!formData.description.trim()) {
-        errors.description = 'Description is required';
-      } else if (formData.description.length < 10) {
-        errors.description = 'Description must be at least 10 characters long';
-      } else */if (formData.description.length > 500) {
+      if (formData.description.length > 500) {
         errors.description = 'Description must be less than 500 characters';
       }
 
@@ -223,6 +237,8 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         setShowFullForm(false);
         setIsOpen(false);
         setValidationErrors({});
+        setVideoId(null);
+        setShowPreview(false);
         onChannelAdded();
       } else {
         setError(result.error || 'Failed to create channel');
@@ -260,6 +276,8 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     });
     setValidationErrors({});
     setError('');
+    setVideoId(null);
+    setShowPreview(false);
   };
 
   if (!isOpen) {
@@ -308,6 +326,38 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
           <p className="text-sm text-gray-500 mt-1">
             Enter any video ID or URL from the channel you want to add
           </p>
+          
+          {/* Video Preview Section */}
+          {videoId && (
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={togglePreview}
+                className="flex items-center gap-2 mb-2"
+              >
+                <FaPlay />
+                {showPreview ? 'Hide Preview' : 'Preview Video'}
+              </Button>
+              
+              {showPreview && (
+                <div className="mt-2">
+                  <div className="relative aspect-video max-w-2xl">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      title="YouTube video preview"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full rounded-md border"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Preview of the YouTube video
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {showFullForm && (
