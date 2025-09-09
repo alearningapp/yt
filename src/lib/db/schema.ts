@@ -87,6 +87,20 @@ export const channelClicks = pgTable('channel_click', {
   clickedAt: timestamp('clicked_at').defaultNow().notNull(),
 });
 
+export const channelHistory = pgTable('channel_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  channelId: uuid('channel_id').notNull().references(() => channels.id, { onDelete: 'cascade' }),
+  period: text('period').notNull(), // 'weekly' or 'monthly'
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date').notNull(),
+  subscriptionCount: integer('subscription_count').notNull(),
+  clickCount: integer('click_count').notNull(),
+  subscriptionGrowth: integer('subscription_growth').notNull(), // Change from previous period
+  clickGrowth: integer('click_growth').notNull(), // Change from previous period
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type User = typeof user.$inferSelect;
 export type Channel = typeof channels.$inferSelect;
 export type ChannelClick = typeof channelClicks.$inferSelect;
+export type ChannelHistory = typeof channelHistory.$inferSelect;

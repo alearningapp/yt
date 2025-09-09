@@ -1,4 +1,4 @@
-import { Channel } from '@/lib/db/schema';
+import { Channel, ChannelHistory } from '@/lib/db/schema';
 
 export interface ChannelWithDetails extends Channel {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,4 +29,22 @@ export interface PasswordChangeData {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+}
+
+export interface ChannelHistoryWithDetails extends ChannelHistory {
+  channel?: Channel;
+}
+
+export interface ChannelStatsPeriod {
+  period: 'weekly' | 'monthly';
+  startDate: Date;
+  endDate: Date;
+  subscriptionCount: number;
+  clickCount: number;
+  subscriptionGrowth: number;
+  clickGrowth: number;
+}
+
+export interface ChannelWithHistoryDetails extends ChannelWithDetails {
+  history?: ChannelHistoryWithDetails[];
 }

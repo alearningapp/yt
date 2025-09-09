@@ -1,9 +1,9 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { channels, channelClicks, user } from '@/lib/db/schema';
-import { eq, desc, and,inArray } from 'drizzle-orm';
-import { ChannelFormData, ChannelWithDetails } from '@/types';
+import { channels, channelClicks, user, channelHistory } from '@/lib/db/schema';
+import { eq, desc, and, inArray } from 'drizzle-orm';
+import { ChannelFormData, ChannelWithDetails, ChannelWithHistoryDetails } from '@/types';
 
 export async function createChannel(data: ChannelFormData, userId: string) {
   try {
@@ -112,7 +112,7 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
   }
 }
 
-export async function getChannelById(id: string): Promise<ChannelWithDetails | null> {
+export async function getChannelById(id: string, includeHistory = false): Promise<ChannelWithHistoryDetails | null> {
   try {
     const [channel] = await db
       .select({
@@ -155,11 +155,46 @@ export async function getChannelById(id: string): Promise<ChannelWithDetails | n
       .leftJoin(user, eq(channelClicks.userId, user.id))
       .where(eq(channelClicks.channelId, id));
 
-    return {
+    const channelData = {
       ...channel,
       clickCount: clicks.length,
       clickedBy: clicks,
     };
+
+    // Include history data if requested
+    if (includeHistory) {
+      // Get weekly and monthly history
+      const weeklyHistory = await db
+        .select()
+        .from(channelHistory)
+        .where(
+          and(
+            eq(channelHistory.channelId, id),
+            eq(channelHistory.period, 'weekly')
+          )
+        )
+        .orderBy(desc(channelHistory.startDate))
+        .limit(12);
+
+      const monthlyHistory = await db
+        .select()
+        .from(channelHistory)
+        .where(
+          and(
+            eq(channelHistory.channelId, id),
+            eq(channelHistory.period, 'monthly')
+          )
+        )
+        .orderBy(desc(channelHistory.startDate))
+        .limit(12);
+
+      return {
+        ...channelData,
+        history: [...weeklyHistory, ...monthlyHistory],
+      };
+    }
+
+    return channelData;
   } catch (error) {
     console.error('Error fetching channel:', error);
     return null;
@@ -223,6 +258,9 @@ export async function getChannelSupporters(channelId: string) {
 
   return clickAndChannels;
 }
+// Import the functions from channelHistory.ts
+import { generateAndSaveWeeklyStats, generateAndSaveMonthlyStats } from './channelHistory';
+
 export async function updateChannel(id: string, data: Partial<ChannelFormData>, userId: string) {
   try {
     // Check if user owns the channel
@@ -244,7 +282,9 @@ export async function updateChannel(id: string, data: Partial<ChannelFormData>, 
       .where(eq(channels.id, id))
       .returning();
 
-      
+    // Generate and save weekly and monthly statistics
+    await generateAndSaveWeeklyStats(id);
+    await generateAndSaveMonthlyStats(id);
 
     return { success: true, channel: updatedChannel };
   } catch (error) {
@@ -289,6 +329,10 @@ export async function trackChannelClick(channelId: string, userId: string) {
       channelId,
       userId,
     });
+
+    // Generate and save weekly and monthly statistics after a new click
+    await generateAndSaveWeeklyStats(channelId);
+    await generateAndSaveMonthlyStats(channelId);
 
     return { success: true };
   } catch (error) {

@@ -6,14 +6,16 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/Button';
 import { getChannelById, trackChannelClick, updateChannel, deleteChannel } from '@/lib/actions/channels';
-import { ChannelWithDetails } from '@/types';
-import { ExternalLink, Users,  Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2, ThumbsUp, MessageSquare } from 'lucide-react';
+import { ChannelWithHistoryDetails } from '@/types';
+import { ExternalLink, Users, Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2, ThumbsUp, MessageSquare, BarChart } from 'lucide-react';
 import { ChannelSupporters } from '@/components/ChannelSupporters';
+import { ChannelHistory } from '@/components/ChannelHistory';
+import { GenerateStatsButton } from '@/components/GenerateStatsButton';
 export default function ChannelDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { session } = useAuth();
-  const [channel, setChannel] = useState<ChannelWithDetails | null>(null);
+  const [channel, setChannel] = useState<ChannelWithHistoryDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrackingClick, setIsTrackingClick] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -127,7 +129,8 @@ export default function ChannelDetailPage() {
   useEffect(() => {
     const fetchChannel = async () => {
       try {
-        const data = await getChannelById(channelId);
+        // Include history data when fetching channel
+        const data = await getChannelById(channelId, true);
         setChannel(data);
         if (data) {
           setEditData({
@@ -415,10 +418,23 @@ export default function ChannelDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div className="space-y-6">
               <div className="bg-gray-50 p-5 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-500" />
-                  Channel Statistics
-                </h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-500" />
+                    Channel Statistics
+                  </h3>
+                  {isOwner && !isEditing && (
+                    <GenerateStatsButton 
+                      channelId={channel.id} 
+                      onSuccess={() => {
+                        // Refresh channel data after generating stats
+                        getChannelById(channelId, true).then(data => {
+                          if (data) setChannel(data);
+                        });
+                      }} 
+                    />
+                  )}
+                </div>
                 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -558,6 +574,14 @@ export default function ChannelDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Channel History Section */}
+          {channel.history && channel.history.length > 0 && (
+            <div className="mt-8 mb-8">
+              <ChannelHistory channelHistory={channel.history} />
+            </div>
+          )}
+          
           <ChannelSupporters channelId={channel.id} />
         </div>
       </main>
