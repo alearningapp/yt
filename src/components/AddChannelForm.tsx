@@ -394,7 +394,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                     ) : (
                       <FaCheck />
                     )}
-                    Fetch Channel Data
+                    Continue Fetch Channel Data
                   </Button>
                 )}
               </div>
