@@ -114,11 +114,11 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
       }
 
       // Validate description
-      if (!formData.description.trim()) {
+      /*if (!formData.description.trim()) {
         errors.description = 'Description is required';
       } else if (formData.description.length < 10) {
         errors.description = 'Description must be at least 10 characters long';
-      } else if (formData.description.length > 500) {
+      } else */if (formData.description.length > 500) {
         errors.description = 'Description must be less than 500 characters';
       }
 
