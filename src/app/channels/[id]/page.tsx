@@ -432,6 +432,12 @@ export default function ChannelDetailPage() {
                 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Channel</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {channel.channelAlias||channel.channelName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Subscribers</span>
                     {isEditing ? (
                       <input
