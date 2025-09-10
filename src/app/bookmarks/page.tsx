@@ -127,24 +127,11 @@ export default function BookmarksPage() {
   };
 
   useEffect(() => {
-    if (session?.user?.id) {
-      fetchBookmarks();
-    }
-  }, [session?.user?.id]);
+    fetchBookmarks();
+  }, [session?.user?.id, showAllPublic]);
 
-  if (!session) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Bookmarks</h1>
-            <p className="text-gray-600">Please sign in to view and manage your bookmarks.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Guest users can view public bookmarks but not manage them
+  const isGuest = !session;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -154,10 +141,12 @@ export default function BookmarksPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Bookmarks</h1>
-            <p className="text-gray-600 mt-2">Save and organize your favorite links</p>
+            <p className="text-gray-600 mt-2">
+              {isGuest ? 'Discover public bookmarks' : 'Save and organize your favorite links'}
+            </p>
           </div>
           <div className="flex items-center space-x-4">
-            {session && (
+            {!isGuest && (
               <button
                 onClick={() => {
                   setShowAllPublic(!showAllPublic);
@@ -172,12 +161,14 @@ export default function BookmarksPage() {
                 {showAllPublic ? 'Viewing Public' : 'View Public Bookmarks'}
               </button>
             )}
-            <button
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-            >
-              {showAddForm ? 'Cancel' : 'Add Bookmark'}
-            </button>
+            {!isGuest && (
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                {showAddForm ? 'Cancel' : 'Add Bookmark'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -410,7 +401,8 @@ export default function BookmarksPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No bookmarks yet</h3>
             <p className="text-gray-500">
-              {showAddForm ? 'Fill out the form above to add your first bookmark!' : 'Click "Add Bookmark" to get started.'}
+              {isGuest ? 'No public bookmarks available yet.' : 
+               showAddForm ? 'Fill out the form above to add your first bookmark!' : 'Click "Add Bookmark" to get started.'}
             </p>
           </div>
         )}
