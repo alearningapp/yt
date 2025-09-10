@@ -58,7 +58,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
           </div>
           <div className="flex items-center">
             <Calendar className="w-4 h-4 mr-1" />
-            <span>Added {formatDate(channel.createdAt)}</span>
+            <span> {formatDate(channel.createdAt)}</span>
           </div>
         </div>
         <div className="flex items-center">
