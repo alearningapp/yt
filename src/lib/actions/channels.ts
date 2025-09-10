@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { channels, channelClicks, user, channelHistory } from '@/lib/db/schema';
-import { eq, desc, and, inArray } from 'drizzle-orm';
+import { eq, desc, and, inArray, or } from 'drizzle-orm';
 import { ChannelFormData, ChannelWithDetails, ChannelWithHistoryDetails } from '@/types';
 
 export async function createChannel(data: ChannelFormData, userId: string) {
@@ -113,9 +113,9 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
   }
 }
 
-export async function getChannelById(id: string, includeHistory = false): Promise<ChannelWithHistoryDetails | null> {
-  try {
-    const [channel] = await db
+async function getChannelByIdName(id: string)  {
+
+ return await db
       .select({
         id: channels.id,
         vid:channels.vid,
@@ -138,7 +138,13 @@ export async function getChannelById(id: string, includeHistory = false): Promis
       })
       .from(channels)
       .leftJoin(user, eq(channels.createdBy, user.id))
-      .where(eq(channels.id, id));
+      .where(or(eq(channels.id, id),eq(channels.ytChannelId,id),eq(channels.channelAlias,id)));
+  
+}
+
+export async function getChannelById(id: string, includeHistory = false): Promise<ChannelWithHistoryDetails | null> {
+  try {
+    const [channel] = await getChannelByIdName(id);
 
     if (!channel) return null;
 
