@@ -34,6 +34,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
     channelLink: '',
     channelName: '',
     channelAlias: '',
+    ytChannelId: '',
     description: '',
     subscriptionCount: 0,
     vid: '',
@@ -277,6 +278,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
           channelLink: '',
           channelName: '',
           channelAlias: '',
+          ytChannelId: '',
           description: '',
           subscriptionCount: 0,
           vid: '',
@@ -319,6 +321,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
       channelLink: '',
       channelName: '',
       channelAlias: '',
+      ytChannelId: '',
       description: '',
       subscriptionCount: 0,
       vid: '',
@@ -477,6 +480,22 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
               {validationErrors.channelAlias && (
                 <p className="text-sm text-red-500 mt-1">{validationErrors.channelAlias}</p>
               )}
+            </div>
+
+            <div>
+              <Label htmlFor="ytChannelId">YouTube Channel ID</Label>
+              <Input
+                id="ytChannelId"
+                name="ytChannelId"
+                type="text"
+                value={formData.ytChannelId}
+                onChange={handleChange}
+                placeholder="Enter YouTube Channel ID (e.g., UC1234567890)"
+                maxLength={50}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Optional: The unique YouTube channel ID (starts with UC)
+              </p>
             </div>
             <div>
               <Label htmlFor="description">Description</Label>

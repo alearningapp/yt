@@ -22,6 +22,7 @@ export interface ChannelFormData {
   channelLink: string;
   channelName: string;
   channelAlias: string;
+  ytChannelId: string;
   description: string;
   subscriptionCount: number;
   vid: string;
