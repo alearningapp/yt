@@ -10,7 +10,6 @@ import { ChannelWithHistoryDetails } from '@/types';
 import { ExternalLink, Users, Edit, Trash2, ArrowLeft, Video, Eye, Save, X, Loader2, ThumbsUp, MessageSquare, BarChart } from 'lucide-react';
 import { ChannelSupporters } from '@/components/ChannelSupporters';
 import { ChannelHistory } from '@/components/ChannelHistory';
-import { GenerateStatsButton } from '@/components/GenerateStatsButton';
 export default function ChannelDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -428,17 +427,7 @@ export default function ChannelDetailPage() {
                     <Users className="w-5 h-5 text-blue-500" />
                     Channel Statistics
                   </h3>
-                  {isOwner && !isEditing && (
-                    <GenerateStatsButton 
-                      channelId={channel.id} 
-                      onSuccess={() => {
-                        // Refresh channel data after generating stats
-                        getChannelById(channelId, true).then(data => {
-                          if (data) setChannel(data);
-                        });
-                      }} 
-                    />
-                  )}
+                  {/* Stats are now generated automatically via cron job */}
                 </div>
                 
                 <div className="space-y-4">

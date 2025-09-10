@@ -225,7 +225,15 @@ export async function saveChannelStats(channelId: string, stats: ChannelStatsPer
  * Generate and save weekly statistics for a channel
  * @param channelId The ID of the channel
  */
-export async function generateAndSaveWeeklyStats(channelId: string) {
+export async function generateAndSaveWeeklyStats(channelId?: string) {
+  // If no channelId provided, generate for all channels
+  if (!channelId) {
+    const allChannels = await db.select().from(channels);
+    await Promise.all(allChannels.map(channel => 
+      generateAndSaveWeeklyStats(channel.id)
+    ));
+    return { success: true };
+  }
   try {
     const stats = await generateWeeklyStats(channelId);
     if (!stats) {
@@ -243,7 +251,15 @@ export async function generateAndSaveWeeklyStats(channelId: string) {
  * Generate and save monthly statistics for a channel
  * @param channelId The ID of the channel
  */
-export async function generateAndSaveMonthlyStats(channelId: string) {
+export async function generateAndSaveMonthlyStats(channelId?: string) {
+  // If no channelId provided, generate for all channels
+  if (!channelId) {
+    const allChannels = await db.select().from(channels);
+    await Promise.all(allChannels.map(channel => 
+      generateAndSaveMonthlyStats(channel.id)
+    ));
+    return { success: true };
+  }
   try {
     const stats = await generateMonthlyStats(channelId);
     if (!stats) {
