@@ -29,7 +29,12 @@ export function SignInForm() {
       });
 
       if (result.error) {
-        setError(result.error.message || 'An error occurred');
+        const errorMessage = typeof result.error === 'string' 
+          ? result.error 
+          : 'message' in result.error 
+            ? result.error.message 
+            : 'An error occurred';
+        setError(errorMessage);
       }
     } catch (err) {
       console.error(err);

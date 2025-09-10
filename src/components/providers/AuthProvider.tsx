@@ -20,24 +20,40 @@ const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL ,
 });
 
+interface AuthResponse {
+  success: boolean;
+  error?: string | { message: string; code?: string };
+  data?: {
+    user: User;
+    token?: string;
+  };
+}
+
+// Helper type to convert auth client response to AuthResponse
+type AuthClientResponse = {
+  success: boolean;
+  error?: { message: string; code?: string };
+  data?: {
+    user: User;
+    token?: string;
+  };
+};
+
 // Create a context for the auth client
 const AuthContext = createContext<{
   authClient: typeof authClient;
   session: Session | null;
   isLoading: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  signOut: () => Promise<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  signIn: (credentials: { email: string; password: string,rememberMe:boolean }) => Promise<any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  signUp: (credentials: { email: string; password: string; name: string }) => Promise<any>;
+  signOut: () => Promise<AuthResponse>;
+  signIn: (credentials: { email: string; password: string, rememberMe: boolean }) => Promise<AuthResponse>;
+  signUp: (credentials: { email: string; password: string; name: string }) => Promise<AuthResponse>;
 }>({
   authClient,
   session: null,
   isLoading: true,
-  signOut: async () => {},
-  signIn: async () => ({}),
-  signUp: async () => ({}),
+  signOut: async () => ({ success: false, error: 'Not initialized' }),
+  signIn: async () => ({ success: false, error: 'Not initialized' }),
+  signUp: async () => ({ success: false, error: 'Not initialized' }),
 });
 
 export { authClient };
@@ -73,47 +89,100 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Sign out function
-  const signOut = async () => {
+  const signOut = async (): Promise<AuthResponse> => {
     try {
       console.log('signing out');
       const result = await authClient.signOut();
       setSession(null);
-      return result;
+      // Handle both success and error responses from auth client
+      if ('error' in result && result.error) {
+        return {
+          success: false,
+          error: { 
+            message: result.error.message || 'Sign out failed',
+            ...(result.error.code && { code: result.error.code })
+          }
+        };
+      }
+      return {
+        success: true,
+        data: session?.user ? {
+          user: session.user,
+          token: undefined
+        } : undefined
+      };
     } catch (error) {
       console.error('Error signing out:', error);
-      throw error;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Sign out failed'
+      };
     }
   };
 
   // Sign in function
-  const signIn = async (credentials: { email: string; password: string }) => {
+  const signIn = async (credentials: { email: string; password: string, rememberMe: boolean }): Promise<AuthResponse> => {
     try {
       const result = await authClient.signIn.email(credentials);
-      if (result.data) {
-        setSession({ user: result.data.user });
-        router.push('/'); 
-
+      if ('error' in result && result.error) {
+        return {
+          success: false,
+          error: { 
+            message: result.error.message || 'Sign in failed',
+            ...(result.error.code && { code: result.error.code })
+          }
+        };
       }
-      return result;
+      if (result.data?.user) {
+        setSession({ user: result.data.user });
+        router.push('/');
+      }
+      return {
+        success: true,
+        data: result.data ? {
+          user: result.data.user,
+          token: result.data.token || undefined
+        } : undefined
+      };
     } catch (error) {
       console.error('Error signing in:', error);
-      throw error;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Sign in failed'
+      };
     }
   };
 
   // Sign up function
-  const signUp = async (credentials: { email: string; password: string; name: string }) => {
+  const signUp = async (credentials: { email: string; password: string; name: string }): Promise<AuthResponse> => {
     try {
       const result = await authClient.signUp.email(credentials);
-      if (result.data) {
-        setSession({ user: result.data.user });
-        router.push('/'); 
-
+      if ('error' in result && result.error) {
+        return {
+          success: false,
+          error: { 
+            message: result.error.message || 'Sign up failed',
+            ...(result.error.code && { code: result.error.code })
+          }
+        };
       }
-      return result;
+      if (result.data?.user) {
+        setSession({ user: result.data.user });
+        router.push('/');
+      }
+      return {
+        success: true,
+        data: result.data ? {
+          user: result.data.user,
+          token: result.data.token ? result.data.token : undefined
+        } : undefined
+      };
     } catch (error) {
       console.error('Error signing up:', error);
-      throw error;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Sign up failed'
+      };
     }
   };
 

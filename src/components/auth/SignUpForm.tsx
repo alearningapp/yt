@@ -36,7 +36,13 @@ export function SignUpForm() {
       });
 
       if (result.error) {
-        setError(result.error.message || 'An error occurred');
+        let errorMessage = 'An error occurred';
+        if (typeof result.error === 'string') {
+          errorMessage = result.error;
+        } else if (result.error && typeof result.error === 'object' && 'message' in result.error) {
+          errorMessage = (result.error as { message: string }).message;
+        }
+        setError(errorMessage);
       }
     } catch (err) {
             console.error(err)

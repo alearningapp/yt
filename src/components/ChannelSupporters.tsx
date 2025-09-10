@@ -11,16 +11,36 @@ interface Channel {
   channelName: string;
 }
 
+interface SupporterUser {
+  id: string;
+  name: string | null;
+  image: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface Supporter {
-  user?: {
-    id: string;
-    name: string;
-    image?: string;
-    createdAt: Date;
-    updatedAt: Date;
-  };
+  user: SupporterUser | null;
   clickedAt: Date;
   channels: Channel[];
+}
+
+interface ApiSupporter {
+  user: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
+  clickedAt: Date;
+  channels: {
+    id: string;
+    vid: string;
+    channelLink: string;
+    channelName: string;
+    createdBy: string;
+  }[];
 }
 
 interface ChannelSupportersProps {
@@ -50,23 +70,23 @@ export function ChannelSupporters({ channelId }: ChannelSupportersProps) {
       const list = await getChannelSupporters(channelId);
       // Map the list to conform to the Supporter type
       setSupporters(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        list.map((item: any) => ({
+        list.map((item) => ({
           ...item,
           user: item.user
             ? {
                 id: item.user.id,
                 name: item.user.name ?? 'Unknown User',
-                image: item.user.image ?? undefined,
+                image: item.user.image ?? null,
                 createdAt: item.user.createdAt,
                 updatedAt: item.user.updatedAt,
               }
-            : undefined,
-          channels: item.channels.map((channel: any) => ({
+            : null,
+          channels: item.channels.map(channel => ({
             id: channel.id,
             vid: channel.vid,
             channelLink: channel.channelLink,
             channelName: channel.channelName,
+            createdBy: channel.createdBy,
           })),
         }))
       );

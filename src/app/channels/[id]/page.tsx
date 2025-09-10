@@ -27,8 +27,13 @@ export default function ChannelDetailPage() {
   });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [videoInfo, setVideoInfo] = useState<any>(null);
+  const [videoInfo, setVideoInfo] = useState<{
+    title?: string;
+    author_name?: string;
+    author_url?: string;
+    provider_name?: string;
+    thumbnail_url?: string;
+  } | null>(null);
   const [isFetchingVideo, setIsFetchingVideo] = useState(false);
 
   const channelId = params.id as string;

@@ -1,12 +1,19 @@
-import { Channel, ChannelHistory } from '@/lib/db/schema';
+import { Channel, ChannelHistory, user } from '@/lib/db/schema';
+
+export interface UserBasicInfo {
+  id: string;
+  name: string | null;
+  email?: string;  // Made email optional
+  image: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface ChannelWithDetails extends Channel {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  createdByUser: any | null;
+  createdByUser: UserBasicInfo | null;
   clickCount: number;
   clickedBy: Array<{
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    user: any | null;
+    user: UserBasicInfo | null;
     clickedAt: Date;
   }>;
 }
