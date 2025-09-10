@@ -112,13 +112,31 @@ export type Channel = typeof channels.$inferSelect;
 export type ChannelClick = typeof channelClicks.$inferSelect;
 export type ChannelHistory = typeof channelHistory.$inferSelect;
 
+export const bookmarks = pgTable('bookmark', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  url: text('url').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  status: text('status').notNull().default('private'), // 'private' or 'public'
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const bookmarkLikes = pgTable('bookmark_like', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  bookmarkId: uuid('bookmark_id').notNull().references(() => bookmarks.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  likedAt: timestamp('liked_at').defaultNow().notNull(),
+});
+
 export type ChannelWithDetails = Channel & {
   clickCount: number;
   clickedBy: {
     user: {
       id: string;
       name: string | null;
-      image: string | null;
+     image: string | null;
       createdAt: Date;
       updatedAt: Date;
     } | null;
@@ -132,3 +150,6 @@ export type ChannelWithDetails = Channel & {
     updatedAt: Date;
   } | null;
 };
+
+export type Bookmark = typeof bookmarks.$inferSelect;
+export type BookmarkLike = typeof bookmarkLikes.$inferSelect;
