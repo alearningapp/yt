@@ -34,11 +34,14 @@ export function ChannelCard({ channel }: ChannelCardProps) {
             {channel.channelName}
           </h3>
           <p className="text-gray-600 mb-3 line-clamp-2">
+            {channel.channelAlias}
+          </p>
+          <p className="text-gray-600 mb-3 line-clamp-2">
             {channel.description}
           </p>
         </div>
         <Link
-          href={channel.channelLink}
+          href={channel.channelAlias?`https://www.youtube.com/`+ channel.channelAlias:channel.channelLink }
           target="_blank"
           rel="noopener noreferrer"
           className="ml-4 p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
@@ -69,7 +72,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
           <span>{channel.clickCount} clicks</span>
         </div>
         <Link
-          href={`/channels/${channel.id}`}
+          href={`/channels/${channel.channelAlias||channel.id}`}
           className="text-blue-600 hover:text-blue-800 font-medium"
         >
           View Details →

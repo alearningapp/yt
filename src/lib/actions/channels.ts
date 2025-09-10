@@ -112,8 +112,15 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
     return [];
   }
 }
+function isValidUUID(uuid:string) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+}
+
+// Usage
 
 async function getChannelByIdName(id: string)  {
+if(isValidUUID(id)){
 
  return await db
       .select({
@@ -138,7 +145,33 @@ async function getChannelByIdName(id: string)  {
       })
       .from(channels)
       .leftJoin(user, eq(channels.createdBy, user.id))
-      .where(or(eq(channels.id, id),eq(channels.ytChannelId,id),eq(channels.channelAlias,id)));
+      .where(eq(channels.id, id));
+}
+
+ return await db
+      .select({
+        id: channels.id,
+        vid:channels.vid,
+        channelLink: channels.channelLink,
+        channelName: channels.channelName,
+        channelAlias: channels.channelAlias,
+        ytChannelId: channels.ytChannelId,
+        description: channels.description,
+        subscriptionCount: channels.subscriptionCount,
+        createdAt: channels.createdAt,
+        updatedAt: channels.updatedAt,
+        createdBy: channels.createdBy,
+        createdByUser: {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+      })
+      .from(channels)
+      .leftJoin(user, eq(channels.createdBy, user.id))
+      .where(or(eq(channels.ytChannelId,id),eq(channels.channelAlias,id)));
   
 }
 
@@ -161,7 +194,7 @@ export async function getChannelById(id: string, includeHistory = false): Promis
       })
       .from(channelClicks)
       .leftJoin(user, eq(channelClicks.userId, user.id))
-      .where(eq(channelClicks.channelId, id));
+      .where(eq(channelClicks.channelId, channel.id));
 
     const channelData = {
       ...channel,
@@ -178,7 +211,7 @@ export async function getChannelById(id: string, includeHistory = false): Promis
         .from(channelHistory)
         .where(
           and(
-            eq(channelHistory.channelId, id),
+            eq(channelHistory.channelId, channel.id),
             eq(channelHistory.period, 'weekly')
           )
         )
@@ -190,7 +223,7 @@ export async function getChannelById(id: string, includeHistory = false): Promis
         .from(channelHistory)
         .where(
           and(
-            eq(channelHistory.channelId, id),
+            eq(channelHistory.channelId, channel.id),
             eq(channelHistory.period, 'monthly')
           )
         )

@@ -134,7 +134,7 @@ export default function ChannelDetailPage() {
     const fetchChannel = async () => {
       try {
         // Include history data when fetching channel
-        const data = await getChannelById(channelId, true);
+        const data = await getChannelById(decodeURIComponent(channelId), true);
         setChannel(data);
         if (data) {
           setEditData({
