@@ -41,7 +41,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
           </p>
         </div>
         <Link
-          href={channel.channelAlias?`https://www.youtube.com/`+ channel.channelAlias:channel.channelLink }
+          href={channel.channelLink }
           target="_blank"
           rel="noopener noreferrer"
           className="ml-4 p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
