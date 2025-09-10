@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { channels, channelClicks, user, channelHistory } from '@/lib/db/schema';
-import { eq, desc, and, inArray, or } from 'drizzle-orm';
+import { eq, desc, and, inArray, or, count, sql } from 'drizzle-orm';
 import { ChannelFormData, ChannelWithDetails, ChannelWithHistoryDetails } from '@/types';
 
 export async function createChannel(data: ChannelFormData, userId: string) {
@@ -54,12 +54,42 @@ export async function createChannel(data: ChannelFormData, userId: string) {
   }
 }
 
-export async function getChannels(): Promise<ChannelWithDetails[]> {
+export async function getChannelsPaginated(
+  page: number = 1,
+  limit: number = 12,
+  search?: string
+): Promise<{
+  channels: ChannelWithDetails[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}> {
   try {
+    const offset = (page - 1) * limit;
+
+    // Build where clause for search
+    const whereClause = search
+      ? or(
+          sql`LOWER(${channels.channelName}) LIKE LOWER(${'%' + search + '%'})`,
+          sql`LOWER(${channels.channelAlias}) LIKE LOWER(${'%' + search + '%'})`,
+          sql`LOWER(${channels.description}) LIKE LOWER(${'%' + search + '%'})`
+        )
+      : undefined;
+
+    // Get total count
+    const totalResult = await db
+      .select({ count: count() })
+      .from(channels)
+      .where(whereClause);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    // Get paginated channels
     const channelsWithDetails = await db
       .select({
         id: channels.id,
-        vid:channels.vid,
+        vid: channels.vid,
         channelLink: channels.channelLink,
         channelName: channels.channelName,
         channelAlias: channels.channelAlias,
@@ -79,7 +109,10 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
       })
       .from(channels)
       .leftJoin(user, eq(channels.createdBy, user.id))
-      .orderBy(desc(channels.createdAt));
+      .where(whereClause)
+      .orderBy(desc(channels.createdAt))
+      .limit(limit)
+      .offset(offset);
 
     // Get click counts and clicked user for each channel
     const channelsWithClicks = await Promise.all(
@@ -106,18 +139,33 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
         };
       })
     );
-    return channelsWithClicks;
+
+    return {
+      channels: channelsWithClicks,
+      total,
+      totalPages,
+      currentPage: page,
+    };
   } catch (error) {
-    console.error('Error fetching channels:', error);
-    return [];
+    console.error('Error fetching paginated channels:', error);
+    return {
+      channels: [],
+      total: 0,
+      totalPages: 0,
+      currentPage: page,
+    };
   }
 }
+
+export async function getChannels(): Promise<ChannelWithDetails[]> {
+  const result = await getChannelsPaginated(1, 1000);
+  return result.channels;
+}
+
 function isValidUUID(uuid:string) {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
 }
-
-// Usage
 
 async function getChannelByIdName(id: string)  {
 if(isValidUUID(id)){
@@ -242,6 +290,7 @@ export async function getChannelById(id: string, includeHistory = false): Promis
     return null;
   }
 }
+
 export async function getChannelSupporters(channelId: string) {
   // First, get all clicks with user data
   const clicks = await db
@@ -300,6 +349,7 @@ export async function getChannelSupporters(channelId: string) {
 
   return clickAndChannels;
 }
+
 // Import the functions from channelHistory.ts
 import { generateAndSaveWeeklyStats, generateAndSaveMonthlyStats } from './channelHistory';
 
