@@ -126,6 +126,36 @@ export default function BookmarksPage() {
     setFormData({ url: '', title: '', description: '', status: 'private' });
   };
 
+  const fetchUrlMetadata = async (url: string) => {
+    try {
+      // Basic validation
+      if (!url || !url.startsWith('http')) return;
+      
+      // Call API to fetch metadata
+      const response = await fetch(`/api/metadata?url=${encodeURIComponent(url)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({
+          ...prev,
+          title: data.title || prev.title,
+          description: data.description || prev.description
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching URL metadata:', error);
+    }
+  };
+
+  const handleUrlChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setFormData(prev => ({ ...prev, url }));
+    
+    // Debounce the metadata fetch
+    if (url && url.startsWith('http')) {
+      setTimeout(() => fetchUrlMetadata(url), 1000);
+    }
+  };
+
   useEffect(() => {
     fetchBookmarks();
   }, [session?.user?.id, showAllPublic]);
@@ -187,7 +217,7 @@ export default function BookmarksPage() {
                   id="url"
                   required
                   value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  onChange={handleUrlChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="https://example.com"
                 />
