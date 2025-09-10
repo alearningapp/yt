@@ -72,6 +72,7 @@ export const channels = pgTable('channel', {
   channelLink: text('channel_link').unique().notNull(),
   channelName: text('channel_name').notNull(),
   channelAlias: text('channel_alias').unique().notNull(),
+  ytChannelId: text('yt_channel_id'),
   vid: text('vid').notNull(),
   description: text('description').notNull(),
   subscriptionCount: integer('subscription_count').notNull().default(0),
@@ -110,3 +111,24 @@ export type User = typeof user.$inferSelect;
 export type Channel = typeof channels.$inferSelect;
 export type ChannelClick = typeof channelClicks.$inferSelect;
 export type ChannelHistory = typeof channelHistory.$inferSelect;
+
+export type ChannelWithDetails = Channel & {
+  clickCount: number;
+  clickedBy: {
+    user: {
+      id: string;
+      name: string | null;
+      image: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    } | null;
+    clickedAt: Date;
+  }[];
+  createdByUser: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
+};

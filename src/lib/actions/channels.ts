@@ -63,6 +63,7 @@ export async function getChannels(): Promise<ChannelWithDetails[]> {
         channelLink: channels.channelLink,
         channelName: channels.channelName,
         channelAlias: channels.channelAlias,
+        ytChannelId: channels.ytChannelId,
         description: channels.description,
         subscriptionCount: channels.subscriptionCount,
         createdAt: channels.createdAt,
@@ -121,6 +122,7 @@ export async function getChannelById(id: string, includeHistory = false): Promis
         channelLink: channels.channelLink,
         channelName: channels.channelName,
         channelAlias: channels.channelAlias,
+        ytChannelId: channels.ytChannelId,
         description: channels.description,
         subscriptionCount: channels.subscriptionCount,
         createdAt: channels.createdAt,
@@ -157,6 +159,7 @@ export async function getChannelById(id: string, includeHistory = false): Promis
 
     const channelData = {
       ...channel,
+      ytChannelId: channel.ytChannelId,
       clickCount: clicks.length,
       clickedBy: clicks,
     };
