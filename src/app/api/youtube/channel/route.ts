@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { youtubeChannelCache } from '@/lib/db/schema';
+import { and, eq, gte } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -12,8 +15,44 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Check cache first
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    
+    const [cachedData] = await db
+      .select()
+      .from(youtubeChannelCache)
+      .where(
+        and(
+          eq(youtubeChannelCache.videoId, videoId),
+          gte(youtubeChannelCache.updatedAt, oneDayAgo)
+        )
+      )
+      .limit(1);
+
+    if (cachedData) {
+      return NextResponse.json(cachedData.data);
+    }
+
+    // Not in cache or expired, fetch from YouTube API
     const channelData = await fetchYouTubeChannelData(videoId);
     
+    // Save to cache
+    await db
+      .insert(youtubeChannelCache)
+      .values({
+        videoId,
+        data: channelData,
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: youtubeChannelCache.videoId,
+        set: {
+          data: channelData,
+          updatedAt: new Date()
+        }
+      });
+
     return NextResponse.json(channelData);
   } catch (error) {
     console.error('Error fetching channel data:', error);

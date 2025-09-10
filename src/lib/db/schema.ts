@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, uuid, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uuid, boolean, jsonb } from 'drizzle-orm/pg-core';
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -85,6 +85,12 @@ export const channelClicks = pgTable('channel_click', {
   channelId: uuid('channel_id').notNull().references(() => channels.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }), // Change to text reference
   clickedAt: timestamp('clicked_at').defaultNow().notNull(),
+});
+
+export const youtubeChannelCache = pgTable('youtube_channel_cache', {
+  videoId: text('video_id').primaryKey(),
+  data: jsonb('data').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const channelHistory = pgTable('channel_history', {
