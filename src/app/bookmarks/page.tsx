@@ -27,7 +27,7 @@ export default function BookmarksPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalBookmarks, setTotalBookmarks] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showAllPublic, setShowAllPublic] = useState(false);
+  const [showAllPublic, setShowAllPublic] = useState(true);
   const [editingBookmark, setEditingBookmark] = useState<BookmarkWithLikes | null>(null);
   const [formData, setFormData] = useState<BookmarkFormData>({
     url: '',
