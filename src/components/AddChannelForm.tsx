@@ -434,7 +434,7 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         {showFullForm && (
           <>
             <div>
-              <Label htmlFor="channelLink">Channel @channelname</Label>
+              <Label htmlFor="channelLink">Channel {(formData.channelLink&&<a href={formData.channelLink} target='_blank'>@channelname</a>||'@channelname')}</Label>
               <Input
                 id="channelLink"
                 name="channelLink"
