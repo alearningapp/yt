@@ -186,9 +186,15 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
         errors.channelAlias = 'Channel alias must be less than 100 characters';
       }
 
-      // Validate description
+
       if (formData.description.length > 500) {
-        errors.description = 'Description must be less than 500 characters';
+              // Validate description
+      setFormData(prev => ({
+        ...prev,
+        description: prev.description.trim().slice(0, 500)
+      }));
+
+       // errors.description = 'Description must be less than 500 characters';
       }
 
       // Validate subscription count
@@ -505,7 +511,6 @@ export function AddChannelForm({ userId, onChannelAdded }: AddChannelFormProps) 
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Enter channel description"
-                maxLength={500}
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
               {validationErrors.description && (
