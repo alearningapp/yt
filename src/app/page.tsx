@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Navbar } from '@/components/Navbar';
 import { ChannelCard } from '@/components/ChannelCard';
@@ -11,7 +10,6 @@ import { ChannelWithDetails } from '@/types';
 
 export default function Home() {
   const { session } = useAuth();
-  const searchParams = useSearchParams();
   const [channels, setChannels] = useState<ChannelWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,38 +37,14 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const pageParam = searchParams.get('page');
-    const initialPage = pageParam ? parseInt(pageParam) : 1;
-    setCurrentPage(initialPage);
-    fetchChannels(initialPage, searchTerm);
+    fetchChannels(1, searchTerm);
   }, []);
-
-  // Handle browser navigation (back/forward buttons)
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      const pageParam = params.get('page');
-      const newPage = pageParam ? parseInt(pageParam) : 1;
-      if (newPage !== currentPage) {
-        setCurrentPage(newPage);
-        fetchChannels(newPage, searchTerm);
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentPage]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
       fetchChannels(newPage, searchTerm);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      
-      // Update URL with page parameter
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('page', newPage.toString());
-      window.history.pushState({}, '', `?${params.toString()}`);
     }
   };
 
