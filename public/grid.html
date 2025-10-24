@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag & Drop Property and Object Table with Column Width Control</title>
+    <style>
+        #stage {
+            width: 100%;
+            height: 100%;
+            background-color: white;
+        }
+        #object-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+        }
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button.delete {
+            background-color: #e74c3c;
+        }
+        
+        button.delete:hover {
+            background-color: #c0392b;
+        }
+        
+        button.export {
+            background-color: #27ae60;
+        }
+        
+        button.export:hover {
+            background-color: #219653;
+        }
+        
+        button.import {
+            background-color: #9b59b6;
+        }
+        
+        button.import:hover {
+            background-color: #8e44ad;
+        }
+        
+        button.toggle {
+            background-color: #f39c12;
+        }
+        
+        button.toggle:hover {
+            background-color: #e67e22;
+        }
+        
+        button.fullscreen-btn {
+            background-color: #34495e;
+        }
+        
+        button.fullscreen-btn:hover {
+            background-color: #2c3e50;
+        }
+        
+        button.layout-toggle {
+            background-color: #16a085;
+        }
+        
+        button.layout-toggle:hover {
+            background-color: #1abc9c;
+        }
+        
+        button.width-control {
+            background-color: #8e44ad;
+        }
+        
+        button.width-control:hover {
+            background-color: #7d3c98;
+        }
+        
+        .property-form {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .property-form input, .property-form select {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .table-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10000;
+            background: white;
+            border-radius: 0;
+            border: none;
+            overflow: auto;
+        }
+        
+        .table-container.fullscreen table {
+            max-width: none;
+        }
+        
+
+        
+        .table-container.fullscreen .cell-content audio {
+            max-width: 400px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        th {
+            background-color: #f2f6fc;
+            position: relative;
+            font-weight: 600;
+        }
+        
+        .property-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .object-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .drag-handle {
+            cursor: grab;
+            color: #7f8c8d;
+            margin-right: 8px;
+            user-select: none;
+        }
+        
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        
+        .remove-property {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .remove-object {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px;
+        }
+        
+        .cell-content {
+            align-items: center;
+        }
+        
+        .cell-content img, .cell-content video {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .cell-content audio {
+            width: 100%;
+            max-width: 250px;
+            margin: 5px 0;
+        }
+        
+        .editing {
+            background-color: #fffacd;
+        }
+        
+        .text-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+        }
+        
+        .property-name-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .file-input {
+            width: 100%;
+        }
+        
+        .empty-cell {
+            color: #aaa;
+            font-style: italic;
+        }
+        
+        .object-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .import-export-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .toggle-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .fullscreen-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .layout-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .width-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .width-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .width-input {
+            width: 100px;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .width-unit {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .vertical-table th:first-child {
+            width: 150px;
+            background-color: #e8f4fc;
+        }
+        
+        .horizontal-table th:first-child {
+            width: 150px;
+            background-color: #e8f4fc;
+        }
+        
+        .object-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .instructions {
+            background-color: #e8f4fc;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        .instructions ul {
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        .dragging {
+            opacity: 0.5;
+            background-color: #e8f4fc;
+        }
+        
+        .drag-over {
+            background-color: #d4edda;
+        }
+        
+        .property-row {
+            transition: transform 0.2s ease;
+        }
+        
+        .object-column {
+            transition: transform 0.2s ease;
+        }
+        
+        .json-textarea {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            resize: vertical;
+        }
+        
+        .file-input-container {
+            margin-bottom: 15px;
+        }
+        
+        .file-input-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 500;
+            z-index: 1100;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .notification.success {
+            background-color: #27ae60;
+        }
+        
+        .notification.error {
+            background-color: #e74c3c;
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+        
+        .toggle-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .toggle-indicator.on {
+            background-color: #27ae60;
+        }
+        
+        .toggle-indicator.off {
+            background-color: #e74c3c;
+        }
+        
+        .fullscreen-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background-color: #27ae60;
+        }
+        
+        .layout-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background-color: #27ae60;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .property-header-cell.hidden ~ td {
+            border-left: none;
+        }
+        
+        .object-header-cell.hidden ~ th,
+        .object-header-cell.hidden ~ td {
+            border-top: none;
+        }
+        
+        .fullscreen-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 10001;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .fullscreen-hint.show {
+            opacity: 1;
+        }
+        
+        .fullscreen-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 10001;
+            display: none;
+        }
+        
+        .table-container.fullscreen .fullscreen-close {
+            display: block;
+        }
+        
+        /* Horizontal layout specific styles */
+        .horizontal-table .property-header-cell {
+            width: 150px;
+        }
+        
+        .horizontal-table .object-cell {
+            min-width: 200px;
+        }
+        
+        .audio-icon {
+            color: #3498db;
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .property-name-editable {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        
+        .property-name-editable:hover {
+            background-color: #e8f4fc;
+        }
+        
+        .confirmation-dialog {
+            text-align: center;
+        }
+        
+        .confirmation-dialog .warning-icon {
+            font-size: 48px;
+            color: #e74c3c;
+            margin-bottom: 15px;
+        }
+        
+        .confirmation-dialog h3 {
+            color: #e74c3c;
+            margin-top: 0;
+        }
+        
+        .confirmation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        /* Custom width styles */
+        .custom-width-enabled td {
+            min-width: var(--custom-td-width, auto);
+            max-width: var(--custom-td-width, none);
+        }
+        
+        .width-preset-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+        }
+        
+        .width-preset {
+            background-color: #bdc3c7;
+            color: #2c3e50;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .width-preset:hover {
+            background-color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Drag & Drop Property and Object Table with Column Width Control</h1>
+        
+        <div class="instructions">
+            <h3>How to use this table:</h3>
+            <ul>
+                <li>Add objects (columns) using the "Add Object" button</li>
+                <li>Add properties (rows) using the form above the table</li>
+                <li>Double-click on cells to edit content</li>
+                <li>Double-click on property names to edit them</li>
+                <li>Drag properties using the ≡ handle to reorder them</li>
+                <li>Drag objects using the ≡ handle to reorder them</li>
+                <li>Export your data to JSON or import from JSON files</li>
+                <li>Toggle visibility of property and object headers</li>
+                <li>Toggle between vertical and horizontal layout</li>
+                <li>Toggle full screen mode for better data viewing (press ESC to exit)</li>
+                <li>Support for text, image, video, and audio content types</li>
+                <li>Confirmation dialogs for deleting properties and objects</li>
+                <li>Set custom width for all table cells</li>
+            </ul>
+        </div>
+        
+        <div class="object-controls">
+            <button id="add-object">Add Object</button>
+            <button id="remove-object" class="delete">Remove Object</button>
+        </div>
+        
+        <div class="import-export-controls">
+            <button id="export-json" class="export">Export to JSON</button>
+            <button id="import-json" class="import">Import from JSON</button>
+            <button id="clear-data" class="delete">Clear All Data</button>
+        </div>
+        
+        <div class="toggle-controls">
+            <button id="toggle-property-headers" class="toggle">
+                <span class="toggle-indicator on" id="property-toggle-indicator"></span>
+                Toggle Property Headers
+            </button>
+            <button id="toggle-object-headers" class="toggle">
+                <span class="toggle-indicator on" id="object-toggle-indicator"></span>
+                Toggle Object Headers
+            </button>
+        </div>
+        
+        <div class="layout-controls">
+            <button id="toggle-layout" class="layout-toggle">
+                <span class="layout-indicator" id="layout-indicator"></span>
+                Switch to Horizontal Layout
+            </button>
+        </div>
+        
+        <div class="width-controls">
+            <button id="set-width" class="width-control">Set Column Width</button>
+            <div class="width-input-group">
+                <input type="number" id="width-input" class="width-input" placeholder="Width" min="50" max="1000" value="200">
+                <span class="width-unit">px</span>
+            </div>
+            <div class="width-preset-buttons">
+                <button class="width-preset" data-width="150">150px</button>
+                <button class="width-preset" data-width="200">200px</button>
+                <button class="width-preset" data-width="250">250px</button>
+                <button class="width-preset" data-width="300">300px</button>
+            </div>
+            <button id="reset-width" class="delete">Reset Width</button>
+        </div>
+        
+        <div class="fullscreen-controls">
+            <button id="toggle-fullscreen" class="fullscreen-btn">
+                <span class="fullscreen-indicator" id="fullscreen-indicator"></span>
+                Toggle Full Screen
+            </button>
+        </div>
+        
+        <div class="property-form">
+            <input type="text" id="property-name" placeholder="Property Name">
+            <select id="property-type">
+                <option value="text">Text</option>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="audio">Audio</option>
+            </select>
+            <button id="add-property">Add Property</button>
+        </div>
+        
+        <div class="table-container" id="table-container">
+            <table id="object-table" class="vertical-table">
+                <!-- Table content will be generated by JavaScript -->
+            </table>
+        </div>
+    </div>
+    
+    <!-- Modal for object removal confirmation -->
+    <div class="modal" id="remove-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Remove Object</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p>Select an object to remove:</p>
+            <select id="object-to-remove"></select>
+            <div class="modal-footer">
+                <button id="confirm-remove" class="delete">Remove</button>
+                <button id="cancel-remove">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for JSON export -->
+    <div class="modal" id="export-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Export Data to JSON</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p>Copy the JSON below to save your data:</p>
+            <textarea class="json-textarea" id="export-json-text" readonly></textarea>
+            <div class="modal-footer">
+                <button id="copy-json">Copy to Clipboard</button>
+                <button id="download-json" class="export">Download JSON File</button>
+                <button id="close-export">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for JSON import -->
+    <div class="modal" id="import-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import Data from JSON</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p>Paste your JSON data or upload a JSON file:</p>
+            <textarea class="json-textarea" id="import-json-text" placeholder="Paste JSON data here..."></textarea>
+            <div class="file-input-container">
+                <label class="file-input-label" for="import-json-file">Or upload a JSON file:</label>
+                <input type="file" id="import-json-file" accept=".json">
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-import" class="import">Import Data</button>
+                <button id="close-import">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for clear data confirmation -->
+    <div class="modal" id="clear-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Clear All Data</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p>Are you sure you want to clear all data? This action cannot be undone.</p>
+            <div class="modal-footer">
+                <button id="confirm-clear" class="delete">Clear All Data</button>
+                <button id="cancel-clear">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for property deletion confirmation -->
+    <div class="modal" id="delete-property-modal">
+        <div class="modal-content">
+            <div class="confirmation-dialog">
+                <div class="warning-icon">⚠️</div>
+                <h3>Delete Property</h3>
+                <p>Are you sure you want to delete the property "<span id="property-to-delete-name"></span>"?</p>
+                <p>This will remove the property from all objects and cannot be undone.</p>
+                <div class="confirmation-buttons">
+                    <button id="confirm-delete-property" class="delete">Delete Property</button>
+                    <button id="cancel-delete-property">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for object deletion confirmation -->
+    <div class="modal" id="delete-object-modal">
+        <div class="modal-content">
+            <div class="confirmation-dialog">
+                <div class="warning-icon">⚠️</div>
+                <h3>Delete Object</h3>
+                <p>Are you sure you want to delete the object "<span id="object-to-delete-name"></span>"?</p>
+                <p>This action cannot be undone.</p>
+                <div class="confirmation-buttons">
+                    <button id="confirm-delete-object" class="delete">Delete Object</button>
+                    <button id="cancel-delete-object">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification element -->
+    <div class="notification" id="notification"></div>
+    
+    <!-- Full screen hint -->
+    <div class="fullscreen-hint" id="fullscreen-hint">Press ESC to exit full screen</div>
+
+    <script>
+        // Application state
+        const state = {
+            objects: [],
+            properties: [],
+            showPropertyHeaders: true,
+            showObjectHeaders: true,
+            isFullscreen: false,
+            layout: 'vertical', // 'vertical' or 'horizontal'
+            customTdWidth: null // Store custom width value
+        };
+
+        // DOM elements
+        const objectTable = document.getElementById('object-table');
+        const tableContainer = document.getElementById('table-container');
+        const addObjectBtn = document.getElementById('add-object');
+        const removeObjectBtn = document.getElementById('remove-object');
+        const addPropertyBtn = document.getElementById('add-property');
+        const propertyNameInput = document.getElementById('property-name');
+        const propertyTypeSelect = document.getElementById('property-type');
+        const exportJsonBtn = document.getElementById('export-json');
+        const importJsonBtn = document.getElementById('import-json');
+        const clearDataBtn = document.getElementById('clear-data');
+        const togglePropertyHeadersBtn = document.getElementById('toggle-property-headers');
+        const toggleObjectHeadersBtn = document.getElementById('toggle-object-headers');
+        const toggleFullscreenBtn = document.getElementById('toggle-fullscreen');
+        const toggleLayoutBtn = document.getElementById('toggle-layout');
+        const setWidthBtn = document.getElementById('set-width');
+        const resetWidthBtn = document.getElementById('reset-width');
+        const widthInput = document.getElementById('width-input');
+        const fullscreenCloseBtn = document.getElementById('fullscreen-close');
+        const propertyToggleIndicator = document.getElementById('property-toggle-indicator');
+        const objectToggleIndicator = document.getElementById('object-toggle-indicator');
+        const fullscreenIndicator = document.getElementById('fullscreen-indicator');
+        const layoutIndicator = document.getElementById('layout-indicator');
+        const fullscreenHint = document.getElementById('fullscreen-hint');
+        
+        // Modal elements
+        const removeModal = document.getElementById('remove-modal');
+        const exportModal = document.getElementById('export-modal');
+        const importModal = document.getElementById('import-modal');
+        const clearModal = document.getElementById('clear-modal');
+        const deletePropertyModal = document.getElementById('delete-property-modal');
+        const deleteObjectModal = document.getElementById('delete-object-modal');
+        
+        // Modal content elements
+        const objectToRemoveSelect = document.getElementById('object-to-remove');
+        const exportJsonText = document.getElementById('export-json-text');
+        const importJsonText = document.getElementById('import-json-text');
+        const importJsonFile = document.getElementById('import-json-file');
+        const propertyToDeleteName = document.getElementById('property-to-delete-name');
+        const objectToDeleteName = document.getElementById('object-to-delete-name');
+        
+        // Modal action buttons
+        const confirmRemoveBtn = document.getElementById('confirm-remove');
+        const cancelRemoveBtn = document.getElementById('cancel-remove');
+        const copyJsonBtn = document.getElementById('copy-json');
+        const downloadJsonBtn = document.getElementById('download-json');
+        const closeExportBtn = document.getElementById('close-export');
+        const confirmImportBtn = document.getElementById('confirm-import');
+        const closeImportBtn = document.getElementById('close-import');
+        const confirmClearBtn = document.getElementById('confirm-clear');
+        const cancelClearBtn = document.getElementById('cancel-clear');
+        const confirmDeletePropertyBtn = document.getElementById('confirm-delete-property');
+        const cancelDeletePropertyBtn = document.getElementById('cancel-delete-property');
+        const confirmDeleteObjectBtn = document.getElementById('confirm-delete-object');
+        const cancelDeleteObjectBtn = document.getElementById('cancel-delete-object');
+        
+        // Notification element
+        const notification = document.getElementById('notification');
+        
+        // Close modal buttons
+        const closeModalBtns = document.querySelectorAll('.close-modal');
+
+        // Drag and drop variables
+        let draggedRow = null;
+        let draggedColumn = null;
+        let dragStartRowIndex = -1;
+        let dragStartColumnIndex = -1;
+
+        // Variables for property deletion
+        let propertyToDeleteIndex = -1;
+        let objectToDeleteIndex = -1;
+
+        // Initialize the application
+        function init() {
+            // Add event listeners
+            addObjectBtn.addEventListener('click', addObject);
+            removeObjectBtn.addEventListener('click', showRemoveModal);
+            addPropertyBtn.addEventListener('click', addProperty);
+            exportJsonBtn.addEventListener('click', showExportModal);
+            importJsonBtn.addEventListener('click', showImportModal);
+            clearDataBtn.addEventListener('click', showClearModal);
+            togglePropertyHeadersBtn.addEventListener('click', togglePropertyHeaders);
+            toggleObjectHeadersBtn.addEventListener('click', toggleObjectHeaders);
+            toggleFullscreenBtn.addEventListener('click', toggleFullscreen);
+            toggleLayoutBtn.addEventListener('click', toggleLayout);
+            setWidthBtn.addEventListener('click', setCustomWidth);
+            resetWidthBtn.addEventListener('click', resetCustomWidth);
+            
+            // Width preset buttons
+            document.querySelectorAll('.width-preset').forEach(button => {
+                button.addEventListener('click', function() {
+                    const width = this.getAttribute('data-width');
+                    widthInput.value = width;
+                    setCustomWidth();
+                });
+            });
+            
+            // Modal action buttons
+            confirmRemoveBtn.addEventListener('click', removeObject);
+            cancelRemoveBtn.addEventListener('click', hideRemoveModal);
+            copyJsonBtn.addEventListener('click', copyJsonToClipboard);
+            downloadJsonBtn.addEventListener('click', downloadJsonFile);
+            closeExportBtn.addEventListener('click', hideExportModal);
+            confirmImportBtn.addEventListener('click', importJsonData);
+            closeImportBtn.addEventListener('click', hideImportModal);
+            confirmClearBtn.addEventListener('click', clearAllData);
+            cancelClearBtn.addEventListener('click', hideClearModal);
+            confirmDeletePropertyBtn.addEventListener('click', confirmDeleteProperty);
+            cancelDeletePropertyBtn.addEventListener('click', hideDeletePropertyModal);
+            confirmDeleteObjectBtn.addEventListener('click', confirmDeleteObject);
+            cancelDeleteObjectBtn.addEventListener('click', hideDeleteObjectModal);
+            
+            // Close modal buttons
+            closeModalBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+            
+            // File input change handler
+            importJsonFile.addEventListener('change', handleFileUpload);
+            
+            // ESC key handler for exiting fullscreen
+            document.addEventListener('keydown', handleKeyDown);
+            
+            // Update toggle indicators
+            updateToggleIndicators();
+            
+            // Add sample data for demonstration
+            addSampleData();
+        }
+
+        // Set custom width for all table cells
+        function setCustomWidth() {
+            const widthValue = widthInput.value.trim();
+            
+            if (!widthValue) {
+                showNotification('Please enter a width value', 'error');
+                return;
+            }
+            
+            const width = parseInt(widthValue);
+            
+            if (isNaN(width) || width < 50 || width > 1000) {
+                showNotification('Please enter a valid width between 50 and 1000 pixels', 'error');
+                return;
+            }
+            
+            // Store the custom width in state
+            state.customTdWidth = width;
+            
+            // Apply the custom width using CSS custom property
+            document.documentElement.style.setProperty('--custom-td-width', `${width}px`);
+            
+            // Add custom width class to table
+            objectTable.classList.add('custom-width-enabled');
+            
+            showNotification(`All table cells set to ${width}px width`, 'success');
+        }
+
+        // Reset custom width
+        function resetCustomWidth() {
+            // Remove custom width from state
+            state.customTdWidth = null;
+            
+            // Remove the custom property
+            document.documentElement.style.removeProperty('--custom-td-width');
+            
+            // Remove custom width class from table
+            objectTable.classList.remove('custom-width-enabled');
+            
+            // Reset input value
+            widthInput.value = '200';
+            
+            showNotification('Column width reset to default', 'success');
+        }
+
+        // Handle keyboard events
+        function handleKeyDown(e) {
+            if (e.key === 'Escape' && state.isFullscreen) {
+                exitFullscreen();
+            }
+        }
+
+        // Toggle layout between vertical and horizontal
+        function toggleLayout() {
+            state.layout = state.layout === 'vertical' ? 'horizontal' : 'vertical';
+            updateToggleIndicators();
+            renderTable();
+            showNotification(`Switched to ${state.layout} layout`, 'success');
+        }
+
+        // Toggle fullscreen mode
+        function toggleFullscreen() {
+            if (state.isFullscreen) {
+                exitFullscreen();
+            } else {
+                enterFullscreen();
+            }
+        }
+
+// Enter fullscreen mode
+function enterFullscreen() {
+    const element = document.querySelector('#table-container');
+    
+    if (!element) {
+        console.error('Element #object-table not found');
+        showNotification('Error: Cannot enter full screen mode', 'error');
+        return;
+    }
+    
+    try {
+        // Try different fullscreen methods for cross-browser compatibility
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) { // Safari
+            element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) { // IE/Edge
+            element.msRequestFullscreen();
+        } else if (element.mozRequestFullScreen) { // Firefox
+            element.mozRequestFullScreen();
+        } else {
+            throw new Error('Fullscreen API not supported');
+        }
+        
+        // Show hint
+        if (fullscreenHint) {
+            fullscreenHint.classList.add('show');
+            setTimeout(() => {
+                fullscreenHint.classList.remove('show');
+            }, 3000); // Show for 3 seconds
+        }
+        
+        showNotification('Entered full screen mode. Press ESC to exit.', 'success');
+        
+    } catch (error) {
+        console.error('Failed to enter fullscreen:', error);
+        showNotification('Failed to enter full screen mode', 'error');
+    }
+}
+
+// Exit fullscreen mode
+function exitFullscreen() {
+    try {
+        // Try different exit methods for cross-browser compatibility
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { // Safari
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { // IE/Edge
+            document.msExitFullscreen();
+        } else if (document.mozCancelFullScreen) { // Firefox
+            document.mozCancelFullScreen();
+        } else {
+            throw new Error('Fullscreen exit API not supported');
+        }
+        
+        showNotification('Exited full screen mode.', 'success');
+        
+    } catch (error) {
+        console.error('Failed to exit fullscreen:', error);
+        showNotification('Exited full screen mode.', 'success');
+    }
+}
+
+// Handle fullscreen change events
+function handleFullscreenChange() {
+    const isFullscreen = !!(document.fullscreenElement || 
+                           document.webkitFullscreenElement || 
+                           document.msFullscreenElement || 
+                           document.mozFullScreenElement);
+    
+    if (tableContainer) {
+        tableContainer.classList.toggle('fullscreen', isFullscreen);
+    }
+    
+    state.isFullscreen = isFullscreen;
+    updateToggleIndicators();
+}
+
+// Add event listeners for fullscreen changes
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+document.addEventListener('msfullscreenchange', handleFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
+        // Add sample data for demonstration
+        function addSampleData() {
+            // Add sample properties
+            state.properties.push({ name: 'Name', type: 'text' });
+            state.properties.push({ name: 'Description', type: 'text' });
+            state.properties.push({ name: 'Image', type: 'image' });
+            state.properties.push({ name: 'Video', type: 'video' });
+            state.properties.push({ name: 'Audio', type: 'audio' });
+            
+            // Add sample objects
+            addObject();
+            addObject();
+            
+            // Update the table
+            renderTable();
+        }
+
+        // Toggle property headers visibility
+        function togglePropertyHeaders() {
+            state.showPropertyHeaders = !state.showPropertyHeaders;
+            updateToggleIndicators();
+            renderTable();
+        }
+
+        // Toggle object headers visibility
+        function toggleObjectHeaders() {
+            state.showObjectHeaders = !state.showObjectHeaders;
+            updateToggleIndicators();
+            renderTable();
+        }
+
+        // Update toggle indicators
+        function updateToggleIndicators() {
+            propertyToggleIndicator.className = `toggle-indicator ${state.showPropertyHeaders ? 'on' : 'off'}`;
+            objectToggleIndicator.className = `toggle-indicator ${state.showObjectHeaders ? 'on' : 'off'}`;
+            fullscreenIndicator.className = `fullscreen-indicator ${state.isFullscreen ? 'on' : 'off'}`;
+            layoutIndicator.className = `layout-indicator ${state.layout === 'vertical' ? 'on' : 'off'}`;
+            
+            // Update button text
+            togglePropertyHeadersBtn.innerHTML = `<span class="toggle-indicator ${state.showPropertyHeaders ? 'on' : 'off'}" id="property-toggle-indicator"></span>${state.showPropertyHeaders ? 'Hide' : 'Show'} Property Headers`;
+            toggleObjectHeadersBtn.innerHTML = `<span class="toggle-indicator ${state.showObjectHeaders ? 'on' : 'off'}" id="object-toggle-indicator"></span>${state.showObjectHeaders ? 'Hide' : 'Show'} Object Headers`;
+            toggleFullscreenBtn.innerHTML = `<span class="fullscreen-indicator ${state.isFullscreen ? 'on' : 'off'}" id="fullscreen-indicator"></span>${state.isFullscreen ? 'Exit' : 'Enter'} Full Screen`;
+            toggleLayoutBtn.innerHTML = `<span class="layout-indicator ${state.layout === 'vertical' ? 'on' : 'off'}" id="layout-indicator"></span>Switch to ${state.layout === 'vertical' ? 'Horizontal' : 'Vertical'} Layout`;
+        }
+
+        // Add a new object
+        function addObject() {
+            const newObject = { id: Date.now() };
+            
+            // Initialize properties for the new object
+            state.properties.forEach(property => {
+                newObject[property.name] = '';
+            });
+            
+            state.objects.push(newObject);
+            renderTable();
+        }
+
+        // Show the remove object modal
+        function showRemoveModal() {
+            if (state.objects.length === 0) {
+                alert('No objects to remove.');
+                return;
+            }
+            
+            // Populate the select with object names
+            objectToRemoveSelect.innerHTML = '';
+            state.objects.forEach((object, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `Object ${index + 1}`;
+                objectToRemoveSelect.appendChild(option);
+            });
+            
+            removeModal.style.display = 'flex';
+        }
+
+        // Hide the remove object modal
+        function hideRemoveModal() {
+            removeModal.style.display = 'none';
+        }
+
+        // Remove the selected object
+        function removeObject() {
+            const objectIndex = parseInt(objectToRemoveSelect.value);
+            state.objects.splice(objectIndex, 1);
+            hideRemoveModal();
+            renderTable();
+        }
+
+        // Add a new property
+        function addProperty() {
+            const name = propertyNameInput.value.trim();
+            const type = propertyTypeSelect.value;
+            
+            if (!name) {
+                alert('Please enter a property name.');
+                return;
+            }
+            
+            // Check if property already exists
+            if (state.properties.some(prop => prop.name === name)) {
+                alert('A property with this name already exists.');
+                return;
+            }
+            
+            // Add the property
+            state.properties.push({ name, type });
+            
+            // Add the property to all existing objects
+            state.objects.forEach(object => {
+                object[name] = '';
+            });
+            
+            // Clear the input
+            propertyNameInput.value = '';
+            
+            // Update the table
+            renderTable();
+        }
+
+        // Show delete property confirmation
+        function showDeletePropertyModal(propertyIndex) {
+            propertyToDeleteIndex = propertyIndex;
+            propertyToDeleteName.textContent = state.properties[propertyIndex].name;
+            deletePropertyModal.style.display = 'flex';
+        }
+
+        // Hide delete property modal
+        function hideDeletePropertyModal() {
+            deletePropertyModal.style.display = 'none';
+            propertyToDeleteIndex = -1;
+        }
+
+        // Confirm property deletion
+        function confirmDeleteProperty() {
+            if (propertyToDeleteIndex !== -1) {
+                const propertyName = state.properties[propertyToDeleteIndex].name;
+                removeProperty(propertyName);
+                hideDeletePropertyModal();
+            }
+        }
+
+        // Show delete object confirmation
+        function showDeleteObjectModal(objectIndex) {
+            objectToDeleteIndex = objectIndex;
+            objectToDeleteName.textContent = `Object ${objectIndex + 1}`;
+            deleteObjectModal.style.display = 'flex';
+        }
+
+        // Hide delete object modal
+        function hideDeleteObjectModal() {
+            deleteObjectModal.style.display = 'none';
+            objectToDeleteIndex = -1;
+        }
+
+        // Confirm object deletion
+        function confirmDeleteObject() {
+            if (objectToDeleteIndex !== -1) {
+                state.objects.splice(objectToDeleteIndex, 1);
+                hideDeleteObjectModal();
+                renderTable();
+                showNotification('Object deleted successfully', 'success');
+            }
+        }
+
+        // Remove a property
+        function removeProperty(propertyName) {
+            // Remove the property from the state
+            state.properties = state.properties.filter(prop => prop.name !== propertyName);
+            
+            // Remove the property from all objects
+            state.objects.forEach(object => {
+                delete object[propertyName];
+            });
+            
+            // Update the table
+            renderTable();
+            
+            showNotification(`Property "${propertyName}" deleted successfully`, 'success');
+        }
+
+        // Edit a property name
+        function editPropertyName(propertyIndex) {
+            const property = state.properties[propertyIndex];
+            const propertyCell = document.querySelector(`[data-property-index="${propertyIndex}"] th .property-header span:not(.drag-handle):not(.remove-property)`);
+            
+            if (!propertyCell) return;
+            
+            const currentName = property.name;
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'property-name-input';
+            input.value = currentName;
+            
+            // Replace property name with input
+            const parentDiv = propertyCell.parentElement;
+            const nameSpan = propertyCell;
+            parentDiv.replaceChild(input, nameSpan);
+            parentDiv.classList.add('editing');
+            
+            // Focus and select all text
+            input.focus();
+            input.select();
+            
+            // Save on Enter or blur
+            const savePropertyName = () => {
+                const newName = input.value.trim();
+                
+                if (!newName) {
+                    showNotification('Property name cannot be empty', 'error');
+                    renderTable();
+                    return;
+                }
+                
+                // Check if property name already exists (excluding current property)
+                if (state.properties.some((prop, index) => prop.name === newName && index !== propertyIndex)) {
+                    showNotification('A property with this name already exists', 'error');
+                    renderTable();
+                    return;
+                }
+                
+                // Update property name in state
+                const oldName = property.name;
+                property.name = newName;
+                
+                // Update property name in all objects
+                state.objects.forEach(object => {
+                    object[newName] = object[oldName];
+                    delete object[oldName];
+                });
+                
+                renderTable();
+                showNotification(`Property renamed to "${newName}"`, 'success');
+            };
+            
+            const cancelEdit = () => {
+                renderTable();
+            };
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    savePropertyName();
+                } else if (e.key === 'Escape') {
+                    cancelEdit();
+                }
+            });
+            
+            input.addEventListener('blur', savePropertyName);
+        }
+
+        // Reorder properties
+        function reorderProperties(fromIndex, toIndex) {
+            if (fromIndex === toIndex) return;
+            
+            // Move the property in the array
+            const [movedProperty] = state.properties.splice(fromIndex, 1);
+            state.properties.splice(toIndex, 0, movedProperty);
+            
+            // Update the table
+            renderTable();
+        }
+
+        // Reorder objects
+        function reorderObjects(fromIndex, toIndex) {
+            if (fromIndex === toIndex) return;
+            
+            // Move the object in the array
+            const [movedObject] = state.objects.splice(fromIndex, 1);
+            state.objects.splice(toIndex, 0, movedObject);
+            
+            // Update the table
+            renderTable();
+        }
+
+        // Show export modal
+        function showExportModal() {
+            // Generate JSON from state
+            const exportData = {
+                properties: state.properties,
+                objects: state.objects,
+                showPropertyHeaders: state.showPropertyHeaders,
+                showObjectHeaders: state.showObjectHeaders,
+                layout: state.layout,
+                customTdWidth: state.customTdWidth
+            };
+            
+            // Format JSON with indentation
+            const jsonString = JSON.stringify(exportData, null, 2);
+            exportJsonText.value = jsonString;
+            
+            exportModal.style.display = 'flex';
+        }
+
+        // Hide export modal
+        function hideExportModal() {
+            exportModal.style.display = 'none';
+        }
+
+        // Copy JSON to clipboard
+        function copyJsonToClipboard() {
+            exportJsonText.select();
+            document.execCommand('copy');
+            showNotification('JSON copied to clipboard!', 'success');
+        }
+
+        // Download JSON as file
+        function downloadJsonFile() {
+            const dataStr = exportJsonText.value;
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'table-data.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification('JSON file downloaded!', 'success');
+        }
+
+        // Show import modal
+        function showImportModal() {
+            importJsonText.value = '';
+            importJsonFile.value = '';
+            importModal.style.display = 'flex';
+        }
+
+        // Hide import modal
+        function hideImportModal() {
+            importModal.style.display = 'none';
+        }
+
+        // Handle file upload for import
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                importJsonText.value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        // Import JSON data
+        function importJsonData() {
+            const jsonString = importJsonText.value.trim();
+            
+            if (!jsonString) {
+                showNotification('Please provide JSON data or upload a file.', 'error');
+                return;
+            }
+            
+            try {
+                const importData = JSON.parse(jsonString);
+                
+                // Validate the imported data structure
+                if (!importData.properties || !importData.objects) {
+                    throw new Error('Invalid data format. Expected properties and objects arrays.');
+                }
+                
+                // Replace current state with imported data
+                state.properties = importData.properties;
+                state.objects = importData.objects;
+                
+                // Import header visibility settings if available
+                if (importData.showPropertyHeaders !== undefined) {
+                    state.showPropertyHeaders = importData.showPropertyHeaders;
+                }
+                if (importData.showObjectHeaders !== undefined) {
+                    state.showObjectHeaders = importData.showObjectHeaders;
+                }
+                if (importData.layout !== undefined) {
+                    state.layout = importData.layout;
+                }
+                
+                // Import custom width if available
+                if (importData.customTdWidth !== undefined && importData.customTdWidth !== null) {
+                    state.customTdWidth = importData.customTdWidth;
+                    document.documentElement.style.setProperty('--custom-td-width', `${state.customTdWidth}px`);
+                    objectTable.classList.add('custom-width-enabled');
+                    widthInput.value = state.customTdWidth;
+                } else {
+                    resetCustomWidth();
+                }
+                
+                // Update the table
+                renderTable();
+                
+                // Update toggle indicators
+                updateToggleIndicators();
+                
+                // Close the modal
+                hideImportModal();
+                
+                showNotification('Data imported successfully!', 'success');
+            } catch (error) {
+                showNotification('Error importing data: ' + error.message, 'error');
+                console.error('Import error:', error);
+            }
+        }
+
+        // Show clear data modal
+        function showClearModal() {
+            if (state.objects.length === 0 && state.properties.length === 0) {
+                alert('No data to clear.');
+                return;
+            }
+            
+            clearModal.style.display = 'flex';
+        }
+
+        // Hide clear data modal
+        function hideClearModal() {
+            clearModal.style.display = 'none';
+        }
+
+        // Clear all data
+        function clearAllData() {
+            state.objects = [];
+            state.properties = [];
+            
+            // Update the table
+            renderTable();
+            
+            // Close the modal
+            hideClearModal();
+            
+            showNotification('All data cleared!', 'success');
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Render the table based on current layout
+        function renderTable() {
+            // Clear the table
+            objectTable.innerHTML = '';
+            
+            // Set table class based on layout
+            objectTable.className = state.layout === 'vertical' ? 'vertical-table' : 'horizontal-table';
+            
+            // Apply custom width if set
+            if (state.customTdWidth) {
+                objectTable.classList.add('custom-width-enabled');
+            } else {
+                objectTable.classList.remove('custom-width-enabled');
+            }
+            
+            // If no objects, show empty message
+            if (state.objects.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 2;
+                cell.className = 'empty-cell';
+                cell.textContent = 'No objects yet. Click "Add Object" to create one.';
+                cell.style.textAlign = 'center';
+                row.appendChild(cell);
+                objectTable.appendChild(row);
+                return;
+            }
+            
+            // If no properties, show message
+            if (state.properties.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 2;
+                cell.className = 'empty-cell';
+                cell.textContent = 'No properties yet. Add properties using the form above.';
+                cell.style.textAlign = 'center';
+                row.appendChild(cell);
+                objectTable.appendChild(row);
+                return;
+            }
+            
+            if (state.layout === 'vertical') {
+                renderVerticalTable();
+            } else {
+                renderHorizontalTable();
+            }
+        }
+
+        // Render table in vertical layout (properties as rows)
+        function renderVerticalTable() {
+            // Create header row with object names (if object headers are visible)
+            if (state.showObjectHeaders) {
+                const headerRow = document.createElement('tr');
+                
+                // Add empty header for property names
+                const emptyHeader = document.createElement('th');
+                emptyHeader.textContent = 'Properties';
+                headerRow.appendChild(emptyHeader);
+                
+                // Add object headers
+                state.objects.forEach((object, index) => {
+                    const th = document.createElement('th');
+                    th.className = 'object-name object-column object-header-cell';
+                    th.setAttribute('data-object-index', index);
+                    
+                    const objectHeader = document.createElement('div');
+                    objectHeader.className = 'object-header';
+                    
+                    // Add drag handle for objects
+                    const dragHandle = document.createElement('span');
+                    dragHandle.className = 'drag-handle';
+                    dragHandle.innerHTML = '≡';
+                    dragHandle.setAttribute('draggable', 'true');
+                    
+                    // Add drag event listeners for objects
+                    dragHandle.addEventListener('dragstart', handleObjectDragStart);
+                    dragHandle.addEventListener('dragend', handleObjectDragEnd);
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = `Object ${index + 1}`;
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-object';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.title = 'Remove object';
+                    removeBtn.addEventListener('click', () => {
+                        showDeleteObjectModal(index);
+                    });
+                    
+                    objectHeader.appendChild(dragHandle);
+                    objectHeader.appendChild(nameSpan);
+                    objectHeader.appendChild(removeBtn);
+                    th.appendChild(objectHeader);
+                    
+                    // Make the entire column header a drop target for objects
+                    th.addEventListener('dragover', handleObjectDragOver);
+                    th.addEventListener('dragenter', handleObjectDragEnter);
+                    th.addEventListener('dragleave', handleObjectDragLeave);
+                    th.addEventListener('drop', handleObjectDrop);
+                    
+                    headerRow.appendChild(th);
+                });
+                
+                objectTable.appendChild(headerRow);
+            }
+            
+            // Create rows for each property
+            state.properties.forEach((property, index) => {
+                const row = document.createElement('tr');
+                row.className = 'property-row';
+                row.setAttribute('data-property-index', index);
+                
+                // Add property name cell (if property headers are visible)
+                if (state.showPropertyHeaders) {
+                    const propertyCell = document.createElement('th');
+                    propertyCell.className = 'property-header-cell';
+                    
+                    const propertyHeader = document.createElement('div');
+                    propertyHeader.className = 'property-header';
+                    
+                    // Add drag handle for properties
+                    const dragHandle = document.createElement('span');
+                    dragHandle.className = 'drag-handle';
+                    dragHandle.innerHTML = '≡';
+                    dragHandle.setAttribute('draggable', 'true');
+                    
+                    // Add drag event listeners for properties
+                    dragHandle.addEventListener('dragstart', handlePropertyDragStart);
+                    dragHandle.addEventListener('dragend', handlePropertyDragEnd);
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = property.name;
+                    nameSpan.className = 'property-name-editable';
+                    nameSpan.addEventListener('dblclick', () => {
+                        editPropertyName(index);
+                    });
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-property';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.title = 'Remove property';
+                    removeBtn.addEventListener('click', () => {
+                        showDeletePropertyModal(index);
+                    });
+                    
+                    propertyHeader.appendChild(dragHandle);
+                    propertyHeader.appendChild(nameSpan);
+                    propertyHeader.appendChild(removeBtn);
+                    propertyCell.appendChild(propertyHeader);
+                    
+                    // Make the entire row a drop target for properties
+                    row.addEventListener('dragover', handlePropertyDragOver);
+                    row.addEventListener('dragenter', handlePropertyDragEnter);
+                    row.addEventListener('dragleave', handlePropertyDragLeave);
+                    row.addEventListener('drop', handlePropertyDrop);
+                    
+                    row.appendChild(propertyCell);
+                }
+                
+                // Add property value cells for each object
+                state.objects.forEach(object => {
+                    const cell = document.createElement('td');
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'cell-content';
+                    
+                    const value = object[property.name];
+                    
+                    renderCellContent(contentDiv, property, value, object);
+                    
+                    cell.appendChild(contentDiv);
+                    row.appendChild(cell);
+                });
+                
+                objectTable.appendChild(row);
+            });
+        }
+
+        // Render table in horizontal layout (properties as columns)
+        function renderHorizontalTable() {
+            // Create header row with property names
+            const headerRow = document.createElement('tr');
+            
+            // Add empty header for object names
+            const emptyHeader = document.createElement('th');
+            emptyHeader.textContent = 'Objects';
+            headerRow.appendChild(emptyHeader);
+            
+            // Add property headers
+            state.properties.forEach((property, index) => {
+                const th = document.createElement('th');
+                th.className = 'property-header-cell';
+                th.setAttribute('data-property-index', index);
+                
+                const propertyHeader = document.createElement('div');
+                propertyHeader.className = 'property-header';
+                
+                // Add drag handle for properties
+                const dragHandle = document.createElement('span');
+                dragHandle.className = 'drag-handle';
+                dragHandle.innerHTML = '≡';
+                dragHandle.setAttribute('draggable', 'true');
+                
+                // Add drag event listeners for properties
+                dragHandle.addEventListener('dragstart', handlePropertyDragStart);
+                dragHandle.addEventListener('dragend', handlePropertyDragEnd);
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = property.name;
+                nameSpan.className = 'property-name-editable';
+                nameSpan.addEventListener('dblclick', () => {
+                    editPropertyName(index);
+                });
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-property';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.title = 'Remove property';
+                removeBtn.addEventListener('click', () => {
+                    showDeletePropertyModal(index);
+                });
+                
+                propertyHeader.appendChild(dragHandle);
+                propertyHeader.appendChild(nameSpan);
+                propertyHeader.appendChild(removeBtn);
+                th.appendChild(propertyHeader);
+                
+                // Make the entire column header a drop target for properties
+                th.addEventListener('dragover', handlePropertyDragOver);
+                th.addEventListener('dragenter', handlePropertyDragEnter);
+                th.addEventListener('dragleave', handlePropertyDragLeave);
+                th.addEventListener('drop', handlePropertyDrop);
+                
+                headerRow.appendChild(th);
+            });
+            
+            objectTable.appendChild(headerRow);
+            
+            // Create rows for each object
+            state.objects.forEach((object, index) => {
+                const row = document.createElement('tr');
+                row.className = 'object-row';
+                row.setAttribute('data-object-index', index);
+                
+                // Add object name cell (if object headers are visible)
+                if (state.showObjectHeaders) {
+                    const objectCell = document.createElement('th');
+                    objectCell.className = 'object-name object-header-cell';
+                    
+                    const objectHeader = document.createElement('div');
+                    objectHeader.className = 'object-header';
+                    
+                    // Add drag handle for objects
+                    const dragHandle = document.createElement('span');
+                    dragHandle.className = 'drag-handle';
+                    dragHandle.innerHTML = '≡';
+                    dragHandle.setAttribute('draggable', 'true');
+                    
+                    // Add drag event listeners for objects
+                    dragHandle.addEventListener('dragstart', handleObjectDragStart);
+                    dragHandle.addEventListener('dragend', handleObjectDragEnd);
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = `Object ${index + 1}`;
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-object';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.title = 'Remove object';
+                    removeBtn.addEventListener('click', () => {
+                        showDeleteObjectModal(index);
+                    });
+                    
+                    objectHeader.appendChild(dragHandle);
+                    objectHeader.appendChild(nameSpan);
+                    objectHeader.appendChild(removeBtn);
+                    objectCell.appendChild(objectHeader);
+                    
+                    // Make the entire row a drop target for objects
+                    row.addEventListener('dragover', handleObjectDragOver);
+                    row.addEventListener('dragenter', handleObjectDragEnter);
+                    row.addEventListener('dragleave', handleObjectDragLeave);
+                    row.addEventListener('drop', handleObjectDrop);
+                    
+                    row.appendChild(objectCell);
+                }
+                
+                // Add property value cells for each property
+                state.properties.forEach(property => {
+                    const cell = document.createElement('td');
+                    cell.className = 'object-cell';
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'cell-content';
+                    
+                    const value = object[property.name];
+                    
+                    renderCellContent(contentDiv, property, value, object);
+                    
+                    cell.appendChild(contentDiv);
+                    row.appendChild(cell);
+                });
+                
+                objectTable.appendChild(row);
+            });
+        }
+
+        // Render cell content based on property type
+        function renderCellContent(contentDiv, property, value, object) {
+            if (property.type === 'text') {
+                if (value) {
+                    contentDiv.textContent = value;
+                } else {
+                    contentDiv.textContent = 'Double-click to edit';
+                    contentDiv.className += ' empty-cell';
+                }
+                
+                contentDiv.addEventListener('dblclick', () => {
+                    editTextCell(contentDiv, property.name, object);
+                });
+            } 
+            else if (property.type === 'image') {
+                if (value) {
+                    const img = document.createElement('img');
+                    img.src = value;
+                    img.alt = property.name;
+                    contentDiv.appendChild(img);
+                } else {
+                    contentDiv.textContent = 'Double-click to upload image';
+                    contentDiv.className += ' empty-cell';
+                }
+                
+                contentDiv.addEventListener('dblclick', () => {
+                    uploadImageCell(contentDiv, property.name, object);
+                });
+            } 
+            else if (property.type === 'video') {
+                if (value) {
+                    const video = document.createElement('video');
+                    video.src = value;
+                    video.controls = true;
+                    contentDiv.appendChild(video);
+                } else {
+                    contentDiv.textContent = 'Double-click to upload video';
+                    contentDiv.className += ' empty-cell';
+                }
+                
+                contentDiv.addEventListener('dblclick', () => {
+                    uploadVideoCell(contentDiv, property.name, object);
+                });
+            }
+            else if (property.type === 'audio') {
+                if (value) {
+                    const audio = document.createElement('audio');
+                    audio.src = value;
+                    audio.controls = true;
+                    contentDiv.appendChild(audio);
+                } else {
+                    contentDiv.textContent = 'Double-click to upload audio';
+                    contentDiv.className += ' empty-cell';
+                }
+                
+                contentDiv.addEventListener('dblclick', () => {
+                    uploadAudioCell(contentDiv, property.name, object);
+                });
+            }
+        }
+
+        // Property drag and drop handlers
+        function handlePropertyDragStart(e) {
+            draggedRow = this.closest(state.layout === 'vertical' ? 'tr' : 'th');
+            dragStartRowIndex = parseInt(draggedRow.getAttribute('data-property-index'));
+            
+            // Add dragging class to the row being dragged
+            draggedRow.classList.add('dragging');
+            
+            // Set drag image and effect
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', dragStartRowIndex);
+        }
+        
+        function handlePropertyDragEnd(e) {
+            // Remove dragging class from all rows
+            const selector = state.layout === 'vertical' ? '.property-row' : 'th.property-header-cell';
+            document.querySelectorAll(selector).forEach(row => {
+                row.classList.remove('dragging');
+                row.classList.remove('drag-over');
+            });
+            
+            draggedRow = null;
+            dragStartRowIndex = -1;
+        }
+        
+        function handlePropertyDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+        
+        function handlePropertyDragEnter(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+        
+        function handlePropertyDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+        
+        function handlePropertyDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            if (!draggedRow) return;
+            
+            const dropTargetIndex = parseInt(this.getAttribute('data-property-index'));
+            
+            // Reorder the properties
+            reorderProperties(dragStartRowIndex, dropTargetIndex);
+        }
+
+        // Object drag and drop handlers
+        function handleObjectDragStart(e) {
+            draggedColumn = this.closest(state.layout === 'vertical' ? 'th' : 'tr');
+            dragStartColumnIndex = parseInt(draggedColumn.getAttribute('data-object-index'));
+            
+            // Add dragging class to the column being dragged
+            draggedColumn.classList.add('dragging');
+            
+            // Set drag image and effect
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', dragStartColumnIndex);
+        }
+        
+        function handleObjectDragEnd(e) {
+            // Remove dragging class from all columns
+            const selector = state.layout === 'vertical' ? '.object-column' : '.object-row';
+            document.querySelectorAll(selector).forEach(col => {
+                col.classList.remove('dragging');
+                col.classList.remove('drag-over');
+            });
+            
+            draggedColumn = null;
+            dragStartColumnIndex = -1;
+        }
+        
+        function handleObjectDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+        
+        function handleObjectDragEnter(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+        
+        function handleObjectDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+        
+        function handleObjectDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            if (!draggedColumn) return;
+            
+            const dropTargetIndex = parseInt(this.getAttribute('data-object-index'));
+            
+            // Reorder the objects
+            reorderObjects(dragStartColumnIndex, dropTargetIndex);
+        }
+
+        // Edit a text cell
+        function editTextCell(cellDiv, propertyName, object) {
+            const currentValue = object[propertyName] || '';
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'text-input';
+            input.value = currentValue;
+            
+            // Replace cell content with input
+            cellDiv.innerHTML = '';
+            cellDiv.appendChild(input);
+            cellDiv.classList.add('editing');
+            
+            // Focus and select all text
+            input.focus();
+            input.select();
+            
+            // Save on Enter or blur
+            const saveValue = () => {
+                object[propertyName] = input.value.trim();
+                renderTable();
+            };
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveValue();
+                }
+            });
+            
+            input.addEventListener('blur', saveValue);
+        }
+
+        // Upload an image for a cell
+        function uploadImageCell(cellDiv, propertyName, object) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.className = 'file-input';
+            fileInput.accept = 'image/*';
+            
+            // Replace cell content with file input
+            cellDiv.innerHTML = '';
+            cellDiv.appendChild(fileInput);
+            cellDiv.classList.add('editing');
+            
+            // Focus the file input
+            fileInput.focus();
+            
+            // Handle file selection
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = (e) => {
+                        object[propertyName] = e.target.result;
+                        renderTable();
+                    };
+                    
+                    reader.readAsDataURL(file);
+                } else {
+                    renderTable();
+                }
+            });
+            
+            // Cancel on blur
+            fileInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (document.activeElement !== fileInput) {
+                        renderTable();
+                    }
+                }, 100);
+            });
+        }
+
+        // Upload a video for a cell
+        function uploadVideoCell(cellDiv, propertyName, object) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.className = 'file-input';
+            fileInput.accept = 'video/*';
+            
+            // Replace cell content with file input
+            cellDiv.innerHTML = '';
+            cellDiv.appendChild(fileInput);
+            cellDiv.classList.add('editing');
+            
+            // Focus the file input
+            fileInput.focus();
+            
+            // Handle file selection
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = (e) => {
+                        object[propertyName] = e.target.result;
+                        renderTable();
+                    };
+                    
+                    reader.readAsDataURL(file);
+                } else {
+                    renderTable();
+                }
+            });
+            
+            // Cancel on blur
+            fileInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (document.activeElement !== fileInput) {
+                        renderTable();
+                    }
+                }, 100);
+            });
+        }
+
+        // Upload an audio file for a cell
+        function uploadAudioCell(cellDiv, propertyName, object) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.className = 'file-input';
+            fileInput.accept = 'audio/*';
+            
+            // Replace cell content with file input
+            cellDiv.innerHTML = '';
+            cellDiv.appendChild(fileInput);
+            cellDiv.classList.add('editing');
+            
+            // Focus the file input
+            fileInput.focus();
+            
+            // Handle file selection
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = (e) => {
+                        object[propertyName] = e.target.result;
+                        renderTable();
+                    };
+                    
+                    reader.readAsDataURL(file);
+                } else {
+                    renderTable();
+                }
+            });
+            
+            // Cancel on blur
+            fileInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (document.activeElement !== fileInput) {
+                        renderTable();
+                    }
+                }, 100);
+            });
+        }
+
+        // Initialize the application when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
