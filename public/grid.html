@@ -164,6 +164,11 @@
             outline-offset: -2px;
         }
         
+        .table-container.auto-scroll-active {
+            outline: 2px solid #e74c3c;
+            outline-offset: -2px;
+        }
+        
         .table-container.fullscreen {
             position: fixed;
             top: 0;
@@ -366,6 +371,18 @@
             align-items: center;
         }
         
+        .auto-scroll-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            background-color: #fffacd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #f39c12;
+        }
+        
         .background-input-group {
             display: flex;
             gap: 10px;
@@ -413,7 +430,25 @@
             border-radius: 4px;
         }
         
+        .speed-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .speed-input {
+            width: 80px;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
         .width-unit {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        
+        .speed-unit {
             color: #7f8c8d;
             font-weight: 500;
         }
@@ -578,6 +613,27 @@
             background-color: #e74c3c;
         }
         
+        .auto-scroll-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background-color: #e74c3c;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .auto-scroll-indicator.paused {
+            background-color: #7f8c8d;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
         .fullscreen-indicator {
             display: inline-block;
             width: 10px;
@@ -734,6 +790,32 @@
             background-color: #95a5a6;
         }
         
+        .speed-preset-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+        }
+        
+        .speed-preset {
+            background-color: #bdc3c7;
+            color: #2c3e50;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .speed-preset:hover {
+            background-color: #95a5a6;
+        }
+        
+        .speed-preset.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
         /* Background preview */
         .background-preview {
             width: 30px;
@@ -788,7 +870,7 @@
         }
         
         .table-container:hover .scroll-nav {
-            opacity: 0;
+            opacity: 1;
         }
         
         .scroll-nav.left {
@@ -810,6 +892,26 @@
             top: auto;
             left: 50%;
             transform: translateX(-50%);
+        }
+        
+        /* Auto-scroll status */
+        .auto-scroll-status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .auto-scroll-status.show {
+            opacity: 1;
         }
     </style>
 </head>
@@ -836,6 +938,7 @@
                 <li>Set custom width for all table cells</li>
                 <li>Set custom background color for the table container</li>
                 <li>Use arrow keys to scroll the table (scrollbar is hidden)</li>
+                <li>Press SPACE to toggle auto-scroll left to right with adjustable speed</li>
             </ul>
         </div>
         
@@ -901,7 +1004,7 @@
             <button id="reset-background" class="delete">Reset Background</button>
         </div>
         
-        <!-- New Scroll Controls Section -->
+        <!-- Scroll Controls Section -->
         <div class="scroll-controls">
             <button id="toggle-scrollbar" class="toggle">
                 <span class="toggle-indicator off" id="scrollbar-toggle-indicator"></span>
@@ -910,6 +1013,29 @@
             <div class="scroll-info">
                 <span style="color: #7f8c8d; font-size: 14px;">
                     Use Arrow Keys to scroll • Click buttons or hover for navigation
+                </span>
+            </div>
+        </div>
+        
+        <!-- New Auto-Scroll Controls Section -->
+        <div class="auto-scroll-controls">
+            <button id="toggle-auto-scroll" class="toggle">
+                <span class="auto-scroll-indicator paused" id="auto-scroll-indicator"></span>
+                Auto-Scroll: <span id="auto-scroll-status">Paused</span>
+            </button>
+            <div class="speed-input-group">
+                <input type="number" id="speed-input" class="speed-input" placeholder="Speed" min="1" max="100" value="10">
+                <span class="speed-unit">px/sec</span>
+            </div>
+            <div class="speed-preset-buttons">
+                <button class="speed-preset" data-speed="5">Slow</button>
+                <button class="speed-preset active" data-speed="10">Medium</button>
+                <button class="speed-preset" data-speed="20">Fast</button>
+                <button class="speed-preset" data-speed="50">Very Fast</button>
+            </div>
+            <div class="scroll-info">
+                <span style="color: #7f8c8d; font-size: 14px;">
+                    Press SPACE to toggle auto-scroll • Speed: <span id="current-speed">10</span>px/sec
                 </span>
             </div>
         </div>
@@ -933,6 +1059,9 @@
         </div>
         
         <div class="table-container" id="table-container" tabindex="0">
+            <!-- Auto-scroll status indicator -->
+            <div class="auto-scroll-status" id="auto-scroll-status-indicator">Auto-Scroll: Paused</div>
+            
             <!-- Scroll navigation buttons -->
             <button class="scroll-nav left" id="scroll-left">←</button>
             <button class="scroll-nav right" id="scroll-right">→</button>
@@ -940,6 +1069,7 @@
             <button class="scroll-nav down" id="scroll-down">↓</button>
             
             <!-- Scroll hint -->
+            <div class="scroll-hint" id="scroll-hint">Use Arrow Keys to Scroll</div>
             
             <table id="object-table" class="vertical-table">
                 <!-- Table content will be generated by JavaScript -->
@@ -1065,7 +1195,13 @@
             layout: 'vertical', // 'vertical' or 'horizontal'
             customTdWidth: null, // Store custom width value
             tableBackground: '#ffffff', // Store table background color
-            hideScrollbar: true // Hide scrollbar by default
+            hideScrollbar: true, // Hide scrollbar by default
+            autoScroll: {
+                enabled: false,
+                speed: 10, // pixels per second
+                direction: 'right', // 'left' or 'right'
+                intervalId: null
+            }
         };
 
         // DOM elements
@@ -1101,6 +1237,14 @@
         const scrollUpBtn = document.getElementById('scroll-up');
         const scrollDownBtn = document.getElementById('scroll-down');
         const scrollHint = document.getElementById('scroll-hint');
+        
+        // New auto-scroll control elements
+        const toggleAutoScrollBtn = document.getElementById('toggle-auto-scroll');
+        const autoScrollIndicator = document.getElementById('auto-scroll-indicator');
+        const autoScrollStatus = document.getElementById('auto-scroll-status');
+        const autoScrollStatusIndicator = document.getElementById('auto-scroll-status-indicator');
+        const speedInput = document.getElementById('speed-input');
+        const currentSpeedDisplay = document.getElementById('current-speed');
         
         const fullscreenCloseBtn = document.getElementById('fullscreen-close');
         const propertyToggleIndicator = document.getElementById('property-toggle-indicator');
@@ -1158,6 +1302,7 @@
 
         // Scroll variables
         let scrollHintTimeout = null;
+        let autoScrollStatusTimeout = null;
 
         // Initialize the application
         function init() {
@@ -1187,11 +1332,19 @@
             scrollUpBtn.addEventListener('click', () => scrollTable('up'));
             scrollDownBtn.addEventListener('click', () => scrollTable('down'));
             
+            // New auto-scroll control event listeners
+            toggleAutoScrollBtn.addEventListener('click', toggleAutoScroll);
+            speedInput.addEventListener('input', updateAutoScrollSpeed);
+            speedInput.addEventListener('change', applyAutoScrollSpeed);
+            
             // Keyboard event listeners for scrolling
             tableContainer.addEventListener('keydown', handleTableKeydown);
             tableContainer.addEventListener('focus', showScrollHint);
             tableContainer.addEventListener('blur', hideScrollHint);
             tableContainer.addEventListener('mouseenter', showScrollHintTemporary);
+            
+            // Global spacebar listener for auto-scroll toggle
+            document.addEventListener('keydown', handleGlobalKeydown);
             
             // Width preset buttons
             document.querySelectorAll('.width-preset').forEach(button => {
@@ -1208,6 +1361,21 @@
                     const color = this.getAttribute('data-color');
                     backgroundColorInput.value = color;
                     setTableBackground();
+                });
+            });
+            
+            // Speed preset buttons
+            document.querySelectorAll('.speed-preset').forEach(button => {
+                button.addEventListener('click', function() {
+                    const speed = parseInt(this.getAttribute('data-speed'));
+                    speedInput.value = speed;
+                    applyAutoScrollSpeed();
+                    
+                    // Update active state
+                    document.querySelectorAll('.speed-preset').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
                 });
             });
             
@@ -1251,8 +1419,163 @@
             // Apply initial scrollbar state
             applyScrollbarState();
             
+            // Update speed display
+            updateSpeedDisplay();
+            
             // Add sample data for demonstration
             addSampleData();
+        }
+
+        // Toggle auto-scroll
+        function toggleAutoScroll() {
+            state.autoScroll.enabled = !state.autoScroll.enabled;
+            
+            if (state.autoScroll.enabled) {
+                startAutoScroll();
+                showNotification(`Auto-scroll started at ${state.autoScroll.speed}px/sec`, 'success');
+            } else {
+                stopAutoScroll();
+                showNotification('Auto-scroll stopped', 'success');
+            }
+            
+            updateAutoScrollUI();
+        }
+
+        // Start auto-scroll
+        function startAutoScroll() {
+            // Clear any existing interval
+            if (state.autoScroll.intervalId) {
+                clearInterval(state.autoScroll.intervalId);
+            }
+            
+            // Calculate interval based on speed (pixels per second)
+            const interval = 1000 / state.autoScroll.speed;
+            
+            // Start auto-scroll interval
+            state.autoScroll.intervalId = setInterval(() => {
+                const currentScroll = tableContainer.scrollLeft;
+                const maxScroll = tableContainer.scrollWidth - tableContainer.clientWidth;
+                
+                if (state.autoScroll.direction === 'right') {
+                    if (currentScroll < maxScroll) {
+                        tableContainer.scrollLeft += 1;
+                    } else {
+                        // Reverse direction when reaching the end
+                        state.autoScroll.direction = 'left';
+                    }
+                } else {
+                    if (currentScroll > 0) {
+                        tableContainer.scrollLeft -= 1;
+                    } else {
+                        // Reverse direction when reaching the start
+                        state.autoScroll.direction = 'right';
+                    }
+                }
+            }, interval);
+            
+            // Show auto-scroll status
+            showAutoScrollStatus();
+        }
+
+        // Stop auto-scroll
+        function stopAutoScroll() {
+            if (state.autoScroll.intervalId) {
+                clearInterval(state.autoScroll.intervalId);
+                state.autoScroll.intervalId = null;
+            }
+            
+            // Hide auto-scroll status
+            hideAutoScrollStatus();
+        }
+
+        // Update auto-scroll speed
+        function updateAutoScrollSpeed() {
+            const speed = parseInt(speedInput.value);
+            if (!isNaN(speed) && speed >= 1 && speed <= 100) {
+                state.autoScroll.speed = speed;
+                updateSpeedDisplay();
+                
+                // Restart auto-scroll if it's running
+                if (state.autoScroll.enabled) {
+                    startAutoScroll();
+                }
+            }
+        }
+
+        // Apply auto-scroll speed
+        function applyAutoScrollSpeed() {
+            const speed = parseInt(speedInput.value);
+            if (!isNaN(speed) && speed >= 1 && speed <= 100) {
+                state.autoScroll.speed = speed;
+                updateSpeedDisplay();
+                
+                // Restart auto-scroll if it's running
+                if (state.autoScroll.enabled) {
+                    startAutoScroll();
+                }
+                
+                showNotification(`Auto-scroll speed set to ${speed}px/sec`, 'success');
+            } else {
+                showNotification('Please enter a valid speed between 1 and 100', 'error');
+                speedInput.value = state.autoScroll.speed;
+            }
+        }
+
+        // Update speed display
+        function updateSpeedDisplay() {
+            currentSpeedDisplay.textContent = state.autoScroll.speed;
+        }
+
+        // Update auto-scroll UI
+        function updateAutoScrollUI() {
+            if (state.autoScroll.enabled) {
+                autoScrollIndicator.classList.remove('paused');
+                autoScrollStatus.textContent = 'Active';
+                autoScrollStatusIndicator.textContent = `Auto-Scroll: Active (${state.autoScroll.speed}px/sec)`;
+                tableContainer.classList.add('auto-scroll-active');
+            } else {
+                autoScrollIndicator.classList.add('paused');
+                autoScrollStatus.textContent = 'Paused';
+                autoScrollStatusIndicator.textContent = 'Auto-Scroll: Paused';
+                tableContainer.classList.remove('auto-scroll-active');
+            }
+        }
+
+        // Show auto-scroll status
+        function showAutoScrollStatus() {
+            autoScrollStatusIndicator.classList.add('show');
+            
+            // Clear existing timeout
+            if (autoScrollStatusTimeout) {
+                clearTimeout(autoScrollStatusTimeout);
+            }
+            
+            // Hide after 3 seconds
+            autoScrollStatusTimeout = setTimeout(() => {
+                autoScrollStatusIndicator.classList.remove('show');
+            }, 3000);
+        }
+
+        // Hide auto-scroll status
+        function hideAutoScrollStatus() {
+            autoScrollStatusIndicator.classList.remove('show');
+        }
+
+        // Handle global keyboard events (for spacebar)
+        function handleGlobalKeydown(e) {
+            // Only handle spacebar when not in an input field
+            if (e.key === ' ' && 
+                document.activeElement !== propertyNameInput &&
+                document.activeElement !== widthInput &&
+                document.activeElement !== backgroundColorInput &&
+                document.activeElement !== speedInput &&
+                !document.activeElement.classList.contains('text-input') &&
+                !document.activeElement.classList.contains('property-name-input') &&
+                !document.activeElement.classList.contains('object-name-input')) {
+                
+                e.preventDefault();
+                toggleAutoScroll();
+            }
         }
 
         // Toggle scrollbar visibility
@@ -1635,6 +1958,9 @@
             toggleFullscreenBtn.innerHTML = `<span class="fullscreen-indicator ${state.isFullscreen ? 'on' : 'off'}" id="fullscreen-indicator"></span>${state.isFullscreen ? 'Exit' : 'Enter'} Full Screen`;
             toggleLayoutBtn.innerHTML = `<span class="layout-indicator ${state.layout === 'vertical' ? 'on' : 'off'}" id="layout-indicator"></span>Switch to ${state.layout === 'vertical' ? 'Horizontal' : 'Vertical'} Layout`;
             toggleScrollbarBtn.innerHTML = `<span class="toggle-indicator ${state.hideScrollbar ? 'on' : 'off'}" id="scrollbar-toggle-indicator"></span>${state.hideScrollbar ? 'Show' : 'Hide'} Scrollbar`;
+            
+            // Update auto-scroll UI
+            updateAutoScrollUI();
         }
 
         // Add a new object
@@ -1948,7 +2274,8 @@
                 layout: state.layout,
                 customTdWidth: state.customTdWidth,
                 tableBackground: state.tableBackground,
-                hideScrollbar: state.hideScrollbar
+                hideScrollbar: state.hideScrollbar,
+                autoScroll: state.autoScroll
             };
             
             // Format JSON with indentation
@@ -2067,6 +2394,23 @@
                     applyScrollbarState();
                 }
                 
+                // Import auto-scroll settings if available
+                if (importData.autoScroll !== undefined) {
+                    state.autoScroll = { ...state.autoScroll, ...importData.autoScroll };
+                    speedInput.value = state.autoScroll.speed;
+                    updateSpeedDisplay();
+                    
+                    // Stop any existing auto-scroll
+                    stopAutoScroll();
+                    
+                    // Start auto-scroll if it was enabled
+                    if (state.autoScroll.enabled) {
+                        startAutoScroll();
+                    }
+                    
+                    updateAutoScrollUI();
+                }
+                
                 // Update the table
                 renderTable();
                 
@@ -2102,6 +2446,11 @@
         function clearAllData() {
             state.objects = [];
             state.properties = [];
+            
+            // Stop auto-scroll
+            stopAutoScroll();
+            state.autoScroll.enabled = false;
+            updateAutoScrollUI();
             
             // Update the table
             renderTable();
