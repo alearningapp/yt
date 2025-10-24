@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drag & Drop Property and Object Table with Column Width Control</title>
     <style>
+        /* All previous CSS styles remain the same */
         #stage {
             width: 100%;
             height: 100%;
@@ -146,6 +147,21 @@
             border-radius: 5px;
             transition: all 0.3s ease;
             position: relative;
+            background-color: white; /* Default background */
+            
+            /* Hide scrollbar for Webkit browsers */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        /* Hide scrollbar for Webkit browsers */
+        .table-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .table-container.scroll-keys-enabled {
+            outline: 2px solid #3498db;
+            outline-offset: -2px;
         }
         
         .table-container.fullscreen {
@@ -164,8 +180,6 @@
         .table-container.fullscreen table {
             max-width: none;
         }
-        
-
         
         .table-container.fullscreen .cell-content audio {
             max-width: 400px;
@@ -276,6 +290,15 @@
             font-size: 14px;
         }
         
+        .object-name-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
         .file-input {
             width: 100%;
         }
@@ -325,6 +348,56 @@
             margin-bottom: 20px;
             flex-wrap: wrap;
             align-items: center;
+        }
+        
+        .background-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .scroll-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .background-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .background-input {
+            width: 120px;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .background-preset-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+        }
+        
+        .background-preset {
+            background-color: #bdc3c7;
+            color: #2c3e50;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .background-preset:hover {
+            background-color: #95a5a6;
         }
         
         .width-input-group {
@@ -601,6 +674,17 @@
             background-color: #e8f4fc;
         }
         
+        .object-name-editable {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        
+        .object-name-editable:hover {
+            background-color: #e8f4fc;
+        }
+        
         .confirmation-dialog {
             text-align: center;
         }
@@ -642,10 +726,90 @@
             border-radius: 4px;
             font-size: 12px;
             font-weight: 500;
+            border: none;
+            cursor: pointer;
         }
         
         .width-preset:hover {
             background-color: #95a5a6;
+        }
+        
+        /* Background preview */
+        .background-preview {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        
+        /* Scroll hint */
+        .scroll-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .scroll-hint.show {
+            opacity: 1;
+        }
+        
+        /* Scroll navigation buttons */
+        .scroll-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(52, 152, 219, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+        
+        .scroll-nav:hover {
+            background-color: rgba(41, 128, 185, 0.9);
+        }
+        
+        .table-container:hover .scroll-nav {
+            opacity: 0;
+        }
+        
+        .scroll-nav.left {
+            left: 10px;
+        }
+        
+        .scroll-nav.right {
+            right: 10px;
+        }
+        
+        .scroll-nav.up {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .scroll-nav.down {
+            bottom: 10px;
+            top: auto;
+            left: 50%;
+            transform: translateX(-50%);
         }
     </style>
 </head>
@@ -660,6 +824,7 @@
                 <li>Add properties (rows) using the form above the table</li>
                 <li>Double-click on cells to edit content</li>
                 <li>Double-click on property names to edit them</li>
+                <li>Double-click on object names to edit them</li>
                 <li>Drag properties using the ≡ handle to reorder them</li>
                 <li>Drag objects using the ≡ handle to reorder them</li>
                 <li>Export your data to JSON or import from JSON files</li>
@@ -669,6 +834,8 @@
                 <li>Support for text, image, video, and audio content types</li>
                 <li>Confirmation dialogs for deleting properties and objects</li>
                 <li>Set custom width for all table cells</li>
+                <li>Set custom background color for the table container</li>
+                <li>Use arrow keys to scroll the table (scrollbar is hidden)</li>
             </ul>
         </div>
         
@@ -716,6 +883,37 @@
             <button id="reset-width" class="delete">Reset Width</button>
         </div>
         
+        <!-- Background Controls Section -->
+        <div class="background-controls">
+            <button id="set-background" class="width-control">Set Table Background</button>
+            <div class="background-input-group">
+                <input type="color" id="background-color-input" class="background-input" value="#ffffff">
+                <span class="width-unit">Color</span>
+            </div>
+            <div class="background-preset-buttons">
+                <button class="background-preset" data-color="#ffffff">White</button>
+                <button class="background-preset" data-color="#f8f9fa">Light Gray</button>
+                <button class="background-preset" data-color="#e8f4fc">Light Blue</button>
+                <button class="background-preset" data-color="#fffacd">Light Yellow</button>
+                <button class="background-preset" data-color="#f0f8ff">Alice Blue</button>
+            </div>
+            <div class="background-preview" id="background-preview"></div>
+            <button id="reset-background" class="delete">Reset Background</button>
+        </div>
+        
+        <!-- New Scroll Controls Section -->
+        <div class="scroll-controls">
+            <button id="toggle-scrollbar" class="toggle">
+                <span class="toggle-indicator off" id="scrollbar-toggle-indicator"></span>
+                Hide Scrollbar
+            </button>
+            <div class="scroll-info">
+                <span style="color: #7f8c8d; font-size: 14px;">
+                    Use Arrow Keys to scroll • Click buttons or hover for navigation
+                </span>
+            </div>
+        </div>
+        
         <div class="fullscreen-controls">
             <button id="toggle-fullscreen" class="fullscreen-btn">
                 <span class="fullscreen-indicator" id="fullscreen-indicator"></span>
@@ -734,13 +932,22 @@
             <button id="add-property">Add Property</button>
         </div>
         
-        <div class="table-container" id="table-container">
+        <div class="table-container" id="table-container" tabindex="0">
+            <!-- Scroll navigation buttons -->
+            <button class="scroll-nav left" id="scroll-left">←</button>
+            <button class="scroll-nav right" id="scroll-right">→</button>
+            <button class="scroll-nav up" id="scroll-up">↑</button>
+            <button class="scroll-nav down" id="scroll-down">↓</button>
+            
+            <!-- Scroll hint -->
+            
             <table id="object-table" class="vertical-table">
                 <!-- Table content will be generated by JavaScript -->
             </table>
         </div>
     </div>
     
+    <!-- All modals remain the same -->
     <!-- Modal for object removal confirmation -->
     <div class="modal" id="remove-modal">
         <div class="modal-content">
@@ -856,7 +1063,9 @@
             showObjectHeaders: true,
             isFullscreen: false,
             layout: 'vertical', // 'vertical' or 'horizontal'
-            customTdWidth: null // Store custom width value
+            customTdWidth: null, // Store custom width value
+            tableBackground: '#ffffff', // Store table background color
+            hideScrollbar: true // Hide scrollbar by default
         };
 
         // DOM elements
@@ -877,6 +1086,22 @@
         const setWidthBtn = document.getElementById('set-width');
         const resetWidthBtn = document.getElementById('reset-width');
         const widthInput = document.getElementById('width-input');
+        
+        // New background control elements
+        const setBackgroundBtn = document.getElementById('set-background');
+        const resetBackgroundBtn = document.getElementById('reset-background');
+        const backgroundColorInput = document.getElementById('background-color-input');
+        const backgroundPreview = document.getElementById('background-preview');
+        
+        // New scroll control elements
+        const toggleScrollbarBtn = document.getElementById('toggle-scrollbar');
+        const scrollbarToggleIndicator = document.getElementById('scrollbar-toggle-indicator');
+        const scrollLeftBtn = document.getElementById('scroll-left');
+        const scrollRightBtn = document.getElementById('scroll-right');
+        const scrollUpBtn = document.getElementById('scroll-up');
+        const scrollDownBtn = document.getElementById('scroll-down');
+        const scrollHint = document.getElementById('scroll-hint');
+        
         const fullscreenCloseBtn = document.getElementById('fullscreen-close');
         const propertyToggleIndicator = document.getElementById('property-toggle-indicator');
         const objectToggleIndicator = document.getElementById('object-toggle-indicator');
@@ -931,6 +1156,9 @@
         let propertyToDeleteIndex = -1;
         let objectToDeleteIndex = -1;
 
+        // Scroll variables
+        let scrollHintTimeout = null;
+
         // Initialize the application
         function init() {
             // Add event listeners
@@ -947,12 +1175,39 @@
             setWidthBtn.addEventListener('click', setCustomWidth);
             resetWidthBtn.addEventListener('click', resetCustomWidth);
             
+            // New background control event listeners
+            setBackgroundBtn.addEventListener('click', setTableBackground);
+            resetBackgroundBtn.addEventListener('click', resetTableBackground);
+            backgroundColorInput.addEventListener('input', updateBackgroundPreview);
+            
+            // New scroll control event listeners
+            toggleScrollbarBtn.addEventListener('click', toggleScrollbar);
+            scrollLeftBtn.addEventListener('click', () => scrollTable('left'));
+            scrollRightBtn.addEventListener('click', () => scrollTable('right'));
+            scrollUpBtn.addEventListener('click', () => scrollTable('up'));
+            scrollDownBtn.addEventListener('click', () => scrollTable('down'));
+            
+            // Keyboard event listeners for scrolling
+            tableContainer.addEventListener('keydown', handleTableKeydown);
+            tableContainer.addEventListener('focus', showScrollHint);
+            tableContainer.addEventListener('blur', hideScrollHint);
+            tableContainer.addEventListener('mouseenter', showScrollHintTemporary);
+            
             // Width preset buttons
             document.querySelectorAll('.width-preset').forEach(button => {
                 button.addEventListener('click', function() {
                     const width = this.getAttribute('data-width');
                     widthInput.value = width;
                     setCustomWidth();
+                });
+            });
+            
+            // Background preset buttons
+            document.querySelectorAll('.background-preset').forEach(button => {
+                button.addEventListener('click', function() {
+                    const color = this.getAttribute('data-color');
+                    backgroundColorInput.value = color;
+                    setTableBackground();
                 });
             });
             
@@ -987,8 +1242,198 @@
             // Update toggle indicators
             updateToggleIndicators();
             
+            // Initialize background preview
+            updateBackgroundPreview();
+            
+            // Apply initial background
+            applyTableBackground();
+            
+            // Apply initial scrollbar state
+            applyScrollbarState();
+            
             // Add sample data for demonstration
             addSampleData();
+        }
+
+        // Toggle scrollbar visibility
+        function toggleScrollbar() {
+            state.hideScrollbar = !state.hideScrollbar;
+            applyScrollbarState();
+            updateToggleIndicators();
+            
+            if (state.hideScrollbar) {
+                showNotification('Scrollbar hidden. Use arrow keys to scroll.', 'success');
+                tableContainer.classList.add('scroll-keys-enabled');
+            } else {
+                showNotification('Scrollbar visible.', 'success');
+                tableContainer.classList.remove('scroll-keys-enabled');
+            }
+        }
+
+        // Apply scrollbar state
+        function applyScrollbarState() {
+            if (state.hideScrollbar) {
+                // Scrollbar is already hidden via CSS
+                tableContainer.classList.add('scroll-keys-enabled');
+            } else {
+                tableContainer.classList.remove('scroll-keys-enabled');
+            }
+        }
+
+        // Scroll table in specified direction
+        function scrollTable(direction) {
+            const scrollAmount = 100;
+            
+            switch (direction) {
+                case 'left':
+                    tableContainer.scrollLeft -= scrollAmount;
+                    break;
+                case 'right':
+                    tableContainer.scrollLeft += scrollAmount;
+                    break;
+                case 'up':
+                    tableContainer.scrollTop -= scrollAmount;
+                    break;
+                case 'down':
+                    tableContainer.scrollTop += scrollAmount;
+                    break;
+            }
+            
+            // Show scroll hint temporarily
+            showScrollHintTemporary();
+        }
+
+        // Handle keyboard events for table scrolling
+        function handleTableKeydown(e) {
+            // Only handle arrow keys when table container is focused
+            if (document.activeElement !== tableContainer) return;
+            
+            const scrollAmount = 50;
+            
+            switch (e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    tableContainer.scrollLeft -= scrollAmount;
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    tableContainer.scrollLeft += scrollAmount;
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    tableContainer.scrollTop -= scrollAmount;
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    tableContainer.scrollTop += scrollAmount;
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    tableContainer.scrollLeft = 0;
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    tableContainer.scrollLeft = tableContainer.scrollWidth;
+                    break;
+                case 'PageUp':
+                    e.preventDefault();
+                    tableContainer.scrollTop -= tableContainer.clientHeight;
+                    break;
+                case 'PageDown':
+                    e.preventDefault();
+                    tableContainer.scrollTop += tableContainer.clientHeight;
+                    break;
+            }
+        }
+
+        // Show scroll hint
+        function showScrollHint() {
+            if (state.hideScrollbar) {
+                scrollHint.classList.add('show');
+            }
+        }
+
+        // Hide scroll hint
+        function hideScrollHint() {
+            scrollHint.classList.remove('show');
+        }
+
+        // Show scroll hint temporarily
+        function showScrollHintTemporary() {
+            if (state.hideScrollbar) {
+                scrollHint.classList.add('show');
+                
+                // Clear existing timeout
+                if (scrollHintTimeout) {
+                    clearTimeout(scrollHintTimeout);
+                }
+                
+                // Hide after 3 seconds
+                scrollHintTimeout = setTimeout(() => {
+                    scrollHint.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // Set table background color
+        function setTableBackground() {
+            const colorValue = backgroundColorInput.value.trim();
+            
+            if (!colorValue) {
+                showNotification('Please select a background color', 'error');
+                return;
+            }
+            
+            // Validate color format
+            if (!isValidColor(colorValue)) {
+                showNotification('Please enter a valid color value', 'error');
+                return;
+            }
+            
+            // Store the background color in state
+            state.tableBackground = colorValue;
+            
+            // Apply the background color
+            applyTableBackground();
+            
+            // Update preview
+            updateBackgroundPreview();
+            
+            showNotification(`Table background set to ${colorValue}`, 'success');
+        }
+
+        // Reset table background to default
+        function resetTableBackground() {
+            // Reset to default background
+            state.tableBackground = '#ffffff';
+            
+            // Update input value
+            backgroundColorInput.value = '#ffffff';
+            
+            // Apply the background color
+            applyTableBackground();
+            
+            // Update preview
+            updateBackgroundPreview();
+            
+            showNotification('Table background reset to default', 'success');
+        }
+
+        // Apply table background color
+        function applyTableBackground() {
+            tableContainer.style.backgroundColor = state.tableBackground;
+        }
+
+        // Update background preview
+        function updateBackgroundPreview() {
+            backgroundPreview.style.backgroundColor = backgroundColorInput.value;
+        }
+
+        // Validate color format
+        function isValidColor(color) {
+            const s = new Option().style;
+            s.color = color;
+            return s.color !== '';
         }
 
         // Set custom width for all table cells
@@ -1060,90 +1505,90 @@
             }
         }
 
-// Enter fullscreen mode
-function enterFullscreen() {
-    const element = document.querySelector('#table-container');
-    
-    if (!element) {
-        console.error('Element #object-table not found');
-        showNotification('Error: Cannot enter full screen mode', 'error');
-        return;
-    }
-    
-    try {
-        // Try different fullscreen methods for cross-browser compatibility
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.webkitRequestFullscreen) { // Safari
-            element.webkitRequestFullscreen();
-        } else if (element.msRequestFullscreen) { // IE/Edge
-            element.msRequestFullscreen();
-        } else if (element.mozRequestFullScreen) { // Firefox
-            element.mozRequestFullScreen();
-        } else {
-            throw new Error('Fullscreen API not supported');
+        // Enter fullscreen mode
+        function enterFullscreen() {
+            const element = document.querySelector('#table-container');
+            
+            if (!element) {
+                console.error('Element #object-table not found');
+                showNotification('Error: Cannot enter full screen mode', 'error');
+                return;
+            }
+            
+            try {
+                // Try different fullscreen methods for cross-browser compatibility
+                if (element.requestFullscreen) {
+                    element.requestFullscreen();
+                } else if (element.webkitRequestFullscreen) { // Safari
+                    element.webkitRequestFullscreen();
+                } else if (element.msRequestFullscreen) { // IE/Edge
+                    element.msRequestFullscreen();
+                } else if (element.mozRequestFullScreen) { // Firefox
+                    element.mozRequestFullScreen();
+                } else {
+                    throw new Error('Fullscreen API not supported');
+                }
+                
+                // Show hint
+                if (fullscreenHint) {
+                    fullscreenHint.classList.add('show');
+                    setTimeout(() => {
+                        fullscreenHint.classList.remove('show');
+                    }, 3000); // Show for 3 seconds
+                }
+                
+                showNotification('Entered full screen mode. Press ESC to exit.', 'success');
+                
+            } catch (error) {
+                console.error('Failed to enter fullscreen:', error);
+                showNotification('Failed to enter full screen mode', 'error');
+            }
         }
-        
-        // Show hint
-        if (fullscreenHint) {
-            fullscreenHint.classList.add('show');
-            setTimeout(() => {
-                fullscreenHint.classList.remove('show');
-            }, 3000); // Show for 3 seconds
+
+        // Exit fullscreen mode
+        function exitFullscreen() {
+            try {
+                // Try different exit methods for cross-browser compatibility
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { // Safari
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { // IE/Edge
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) { // Firefox
+                    document.mozCancelFullScreen();
+                } else {
+                    throw new Error('Fullscreen exit API not supported');
+                }
+                
+                showNotification('Exited full screen mode.', 'success');
+                
+            } catch (error) {
+                console.error('Failed to exit fullscreen:', error);
+                showNotification('Exited full screen mode.', 'success');
+            }
         }
-        
-        showNotification('Entered full screen mode. Press ESC to exit.', 'success');
-        
-    } catch (error) {
-        console.error('Failed to enter fullscreen:', error);
-        showNotification('Failed to enter full screen mode', 'error');
-    }
-}
 
-// Exit fullscreen mode
-function exitFullscreen() {
-    try {
-        // Try different exit methods for cross-browser compatibility
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) { // Safari
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { // IE/Edge
-            document.msExitFullscreen();
-        } else if (document.mozCancelFullScreen) { // Firefox
-            document.mozCancelFullScreen();
-        } else {
-            throw new Error('Fullscreen exit API not supported');
+        // Handle fullscreen change events
+        function handleFullscreenChange() {
+            const isFullscreen = !!(document.fullscreenElement || 
+                                document.webkitFullscreenElement || 
+                                document.msFullscreenElement || 
+                                document.mozFullScreenElement);
+            
+            if (tableContainer) {
+                tableContainer.classList.toggle('fullscreen', isFullscreen);
+            }
+            
+            state.isFullscreen = isFullscreen;
+            updateToggleIndicators();
         }
-        
-        showNotification('Exited full screen mode.', 'success');
-        
-    } catch (error) {
-        console.error('Failed to exit fullscreen:', error);
-        showNotification('Exited full screen mode.', 'success');
-    }
-}
 
-// Handle fullscreen change events
-function handleFullscreenChange() {
-    const isFullscreen = !!(document.fullscreenElement || 
-                           document.webkitFullscreenElement || 
-                           document.msFullscreenElement || 
-                           document.mozFullScreenElement);
-    
-    if (tableContainer) {
-        tableContainer.classList.toggle('fullscreen', isFullscreen);
-    }
-    
-    state.isFullscreen = isFullscreen;
-    updateToggleIndicators();
-}
-
-// Add event listeners for fullscreen changes
-document.addEventListener('fullscreenchange', handleFullscreenChange);
-document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-document.addEventListener('msfullscreenchange', handleFullscreenChange);
-document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        // Add event listeners for fullscreen changes
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
 
         // Add sample data for demonstration
         function addSampleData() {
@@ -1182,17 +1627,22 @@ document.addEventListener('mozfullscreenchange', handleFullscreenChange);
             objectToggleIndicator.className = `toggle-indicator ${state.showObjectHeaders ? 'on' : 'off'}`;
             fullscreenIndicator.className = `fullscreen-indicator ${state.isFullscreen ? 'on' : 'off'}`;
             layoutIndicator.className = `layout-indicator ${state.layout === 'vertical' ? 'on' : 'off'}`;
+            scrollbarToggleIndicator.className = `toggle-indicator ${state.hideScrollbar ? 'on' : 'off'}`;
             
             // Update button text
             togglePropertyHeadersBtn.innerHTML = `<span class="toggle-indicator ${state.showPropertyHeaders ? 'on' : 'off'}" id="property-toggle-indicator"></span>${state.showPropertyHeaders ? 'Hide' : 'Show'} Property Headers`;
             toggleObjectHeadersBtn.innerHTML = `<span class="toggle-indicator ${state.showObjectHeaders ? 'on' : 'off'}" id="object-toggle-indicator"></span>${state.showObjectHeaders ? 'Hide' : 'Show'} Object Headers`;
             toggleFullscreenBtn.innerHTML = `<span class="fullscreen-indicator ${state.isFullscreen ? 'on' : 'off'}" id="fullscreen-indicator"></span>${state.isFullscreen ? 'Exit' : 'Enter'} Full Screen`;
             toggleLayoutBtn.innerHTML = `<span class="layout-indicator ${state.layout === 'vertical' ? 'on' : 'off'}" id="layout-indicator"></span>Switch to ${state.layout === 'vertical' ? 'Horizontal' : 'Vertical'} Layout`;
+            toggleScrollbarBtn.innerHTML = `<span class="toggle-indicator ${state.hideScrollbar ? 'on' : 'off'}" id="scrollbar-toggle-indicator"></span>${state.hideScrollbar ? 'Show' : 'Hide'} Scrollbar`;
         }
 
         // Add a new object
         function addObject() {
-            const newObject = { id: Date.now() };
+            const newObject = { 
+                id: Date.now(),
+                name: `Object ${state.objects.length + 1}`
+            };
             
             // Initialize properties for the new object
             state.properties.forEach(property => {
@@ -1215,7 +1665,8 @@ document.addEventListener('mozfullscreenchange', handleFullscreenChange);
             state.objects.forEach((object, index) => {
                 const option = document.createElement('option');
                 option.value = index;
-                option.textContent = `Object ${index + 1}`;
+                const objectName = object.name || `Object ${index + 1}`;
+                option.textContent = objectName;
                 objectToRemoveSelect.appendChild(option);
             });
             
@@ -1291,7 +1742,9 @@ document.addEventListener('mozfullscreenchange', handleFullscreenChange);
         // Show delete object confirmation
         function showDeleteObjectModal(objectIndex) {
             objectToDeleteIndex = objectIndex;
-            objectToDeleteName.textContent = `Object ${objectIndex + 1}`;
+            const object = state.objects[objectIndex];
+            const objectName = object.name || `Object ${objectIndex + 1}`;
+            objectToDeleteName.textContent = objectName;
             deleteObjectModal.style.display = 'flex';
         }
 
@@ -1397,6 +1850,69 @@ document.addEventListener('mozfullscreenchange', handleFullscreenChange);
             input.addEventListener('blur', savePropertyName);
         }
 
+        // Edit an object name
+        function editObjectName(objectIndex) {
+            const objectNameCell = document.querySelector(`[data-object-index="${objectIndex}"] .object-header span:not(.drag-handle):not(.remove-object)`);
+            
+            if (!objectNameCell) return;
+            
+            const object = state.objects[objectIndex];
+            const currentName = object.name || `Object ${objectIndex + 1}`;
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'object-name-input';
+            input.value = currentName;
+            
+            // Replace object name with input
+            const parentDiv = objectNameCell.parentElement;
+            const nameSpan = objectNameCell;
+            parentDiv.replaceChild(input, nameSpan);
+            parentDiv.classList.add('editing');
+            
+            // Focus and select all text
+            input.focus();
+            input.select();
+            
+            // Save on Enter or blur
+            const saveObjectName = () => {
+                const newName = input.value.trim();
+                
+                if (!newName) {
+                    showNotification('Object name cannot be empty', 'error');
+                    renderTable();
+                    return;
+                }
+                
+                // Check if object name already exists (excluding current object)
+                if (state.objects.some((obj, index) => obj.name === newName && index !== objectIndex)) {
+                    showNotification('An object with this name already exists', 'error');
+                    renderTable();
+                    return;
+                }
+                
+                // Update object name in state
+                object.name = newName;
+                
+                renderTable();
+                showNotification(`Object renamed to "${newName}"`, 'success');
+            };
+            
+            const cancelEdit = () => {
+                renderTable();
+            };
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveObjectName();
+                } else if (e.key === 'Escape') {
+                    cancelEdit();
+                }
+            });
+            
+            input.addEventListener('blur', saveObjectName);
+        }
+
         // Reorder properties
         function reorderProperties(fromIndex, toIndex) {
             if (fromIndex === toIndex) return;
@@ -1430,7 +1946,9 @@ document.addEventListener('mozfullscreenchange', handleFullscreenChange);
                 showPropertyHeaders: state.showPropertyHeaders,
                 showObjectHeaders: state.showObjectHeaders,
                 layout: state.layout,
-                customTdWidth: state.customTdWidth
+                customTdWidth: state.customTdWidth,
+                tableBackground: state.tableBackground,
+                hideScrollbar: state.hideScrollbar
             };
             
             // Format JSON with indentation
@@ -1531,6 +2049,22 @@ document.addEventListener('mozfullscreenchange', handleFullscreenChange);
                     widthInput.value = state.customTdWidth;
                 } else {
                     resetCustomWidth();
+                }
+                
+                // Import table background if available
+                if (importData.tableBackground !== undefined && importData.tableBackground !== null) {
+                    state.tableBackground = importData.tableBackground;
+                    backgroundColorInput.value = importData.tableBackground;
+                    applyTableBackground();
+                    updateBackgroundPreview();
+                } else {
+                    resetTableBackground();
+                }
+                
+                // Import scrollbar setting if available
+                if (importData.hideScrollbar !== undefined) {
+                    state.hideScrollbar = importData.hideScrollbar;
+                    applyScrollbarState();
                 }
                 
                 // Update the table
@@ -1666,8 +2200,13 @@ document.addEventListener('mozfullscreenchange', handleFullscreenChange);
                     dragHandle.addEventListener('dragstart', handleObjectDragStart);
                     dragHandle.addEventListener('dragend', handleObjectDragEnd);
                     
+                    const objectName = object.name || `Object ${index + 1}`;
                     const nameSpan = document.createElement('span');
-                    nameSpan.textContent = `Object ${index + 1}`;
+                    nameSpan.textContent = objectName;
+                    nameSpan.className = 'object-name-editable';
+                    nameSpan.addEventListener('dblclick', () => {
+                        editObjectName(index);
+                    });
                     
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'remove-object';
@@ -1849,8 +2388,13 @@ document.addEventListener('mozfullscreenchange', handleFullscreenChange);
                     dragHandle.addEventListener('dragstart', handleObjectDragStart);
                     dragHandle.addEventListener('dragend', handleObjectDragEnd);
                     
+                    const objectName = object.name || `Object ${index + 1}`;
                     const nameSpan = document.createElement('span');
-                    nameSpan.textContent = `Object ${index + 1}`;
+                    nameSpan.textContent = objectName;
+                    nameSpan.className = 'object-name-editable';
+                    nameSpan.addEventListener('dblclick', () => {
+                        editObjectName(index);
+                    });
                     
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'remove-object';
