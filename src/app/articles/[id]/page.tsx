@@ -139,9 +139,12 @@ export default function ArticleDetailPage() {
     if (audioPlayer) {
       const handleEnded = () => {
         setIsPlaying(false);
-        textHighlighterRef.current.stopHighlighting();
-        setCurrentWord('');
-        setProgress(0);
+        // 播放完成后延迟1秒停止高亮
+        setTimeout(() => {
+          textHighlighterRef.current.stopHighlighting();
+          setCurrentWord('');
+          setProgress(0);
+        }, 1000);
       };
       
       audioPlayer.addEventListener('ended', handleEnded);
@@ -282,10 +285,29 @@ export default function ArticleDetailPage() {
               
               {/* Progress and Current Word */}
               <div className="space-y-2">
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>当前高亮: {currentWord || '等待播放...'}</span>
-                  <span>{Math.round(progress * 100)}%</span>
+                  <span>{progress.toFixed(1)}%</span>
                 </div>
+                
+                {/* 播放速度滑块 */}
+                <div className="flex items-center space-x-3 mb-2">
+                  <span className="text-sm">播放速度:</span>
+                  <input 
+                    type="range" 
+                    min="200" 
+                    max="1000" 
+                    step="10"
+                    value={300} 
+                    onChange={(e) => textHighlighterRef.current.setSpeed(Number(e.target.value))}
+                    className="w-24"
+                    disabled={isPlaying}
+                  />
+                  <span className="text-sm min-w-[60px]">
+                    {Math.round(1000 / 300)} 字/秒
+                  </span>
+                </div>
+                
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"

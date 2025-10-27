@@ -56,14 +56,23 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
       
       // 开始逐字高亮，并在段落边界自动分段
       await textHighlighterRef.current.startHighlighting((word, index, isParagraphEnd) => {
+        const currentProgress = textHighlighterRef.current.getProgress();
         setCurrentWord(word);
-        setProgress(textHighlighterRef.current.getProgress());
+        setProgress(currentProgress);
         
         // 如果是段落结束，记录分段时间点
         if (isParagraphEnd) {
           const currentTime = Date.now() - recordingStartRef.current;
           segmentMarkersRef.current.push(currentTime);
           console.log(`段落结束，时间点: ${currentTime}ms`);
+        }
+        
+        // 当进度达到100%时自动停止录制
+        if (currentProgress >= 99.9 ) {
+          console.log('进度达到100%，自动停止录制');
+          setTimeout(() => {
+            stopRecording();
+          }, 100);
         }
       });
       
@@ -229,6 +238,12 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
     if (audioPlayer) {
       const handleEnded = () => {
         setIsPlaying(false);
+        // 播放完成后延迟1秒停止高亮
+        setTimeout(() => {
+          textHighlighterRef.current.stopHighlighting();
+          setCurrentWord('');
+          setProgress(0);
+        }, 1000);
       };
       
       const handlePause = () => {
@@ -295,18 +310,23 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-semibold">录制文章音频</h3>
         <div className="flex items-center space-x-4">
-          <label className="flex items-center space-x-2">
-            <span>播放速度:</span>
-            <select 
-              value={speed} 
-              onChange={(e) => setSpeed(Number(e.target.value))}
-              className="border rounded px-2 py-1"
-              disabled={isRecording}
-            >
-              <option value={300}>慢速</option>
-              <option value={200}>中速</option>
-              <option value={100}>快速</option>
-            </select>
+          <label className="flex items-center space-x-3">
+            <span className="min-w-[80px]">播放速度:</span>
+            <div className="flex items-center space-x-3">
+              <input 
+                type="range" 
+                min="50" 
+                max="500" 
+                step="10"
+                value={speed} 
+                onChange={(e) => setSpeed(Number(e.target.value))}
+                className="w-32"
+                disabled={isRecording}
+              />
+              <span className="text-sm text-gray-600 min-w-[80px]">
+                {Math.round(1000 / speed)} 字/秒
+              </span>
+            </div>
           </label>
         </div>
       </div>

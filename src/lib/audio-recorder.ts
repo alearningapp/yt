@@ -94,8 +94,12 @@ export class TextHighlighter {
         if (this.currentIndex >= this.text.length) {
           // 确保进度显示为100%
           callback('', this.text.length, false);
-          this.stopHighlighting();
-          resolve();
+          
+          // 播放完成后延迟1秒停止高亮
+          setTimeout(() => {
+            this.stopHighlighting();
+            resolve();
+          }, 1000);
           return;
         }
 
