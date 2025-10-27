@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { getArticleById, toggleArticleLike } from '@/lib/actions/articles';
 import { getArticleAudio } from '@/lib/actions/article-audio';
 import { ArticleWithDetails } from '@/types';
-import { Calendar, Eye, Heart, User, Edit, Trash2, ArrowLeft, Volume2, Mic } from 'lucide-react';
+import { Calendar, Eye, Heart, User, Edit, Trash2, ArrowLeft, Volume2, Mic, Play, Square } from 'lucide-react';
 import AudioPlayer from '@/components/articles/AudioPlayer';
+import { TextHighlighter } from '@/lib/audio-recorder';
 
 export default function ArticleDetailPage() {
   const params = useParams();
@@ -20,6 +21,14 @@ export default function ArticleDetailPage() {
   const [liking, setLiking] = useState(false);
   const [articleAudio, setArticleAudio] = useState<any>(null);
   const [audioLoading, setAudioLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentWord, setCurrentWord] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [highlightedText, setHighlightedText] = useState('');
+  
+  const contentRef = useRef<HTMLDivElement>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement>(null);
+  const textHighlighterRef = useRef(new TextHighlighter());
 
   const articleId = params.id as string;
 
@@ -86,6 +95,62 @@ export default function ArticleDetailPage() {
       minute: '2-digit',
     });
   };
+
+  // 播放音频并同步文字高亮
+  const playAudioWithHighlight = async () => {
+    if (!articleAudio || !contentRef.current || !article) return;
+    
+    try {
+      // 初始化文字高亮器
+      textHighlighterRef.current.setHighlightElement(contentRef.current);
+      textHighlighterRef.current.setText(article.content);
+      textHighlighterRef.current.setSpeed(300); // 中等速度
+      
+      // 开始文字高亮
+      await textHighlighterRef.current.startHighlighting((word, index, isParagraphEnd) => {
+        setCurrentWord(word);
+        setProgress(textHighlighterRef.current.getProgress());
+      });
+      
+      // 播放音频
+      if (audioPlayerRef.current) {
+        await audioPlayerRef.current.play();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.error('播放音频失败:', error);
+    }
+  };
+
+  const stopAudio = () => {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      setIsPlaying(false);
+      textHighlighterRef.current.stopHighlighting();
+      setCurrentWord('');
+      setProgress(0);
+    }
+  };
+
+  // 处理音频播放结束
+  useEffect(() => {
+    const audioPlayer = audioPlayerRef.current;
+    if (audioPlayer) {
+      const handleEnded = () => {
+        setIsPlaying(false);
+        textHighlighterRef.current.stopHighlighting();
+        setCurrentWord('');
+        setProgress(0);
+      };
+      
+      audioPlayer.addEventListener('ended', handleEnded);
+      
+      return () => {
+        audioPlayer.removeEventListener('ended', handleEnded);
+      };
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -168,9 +233,63 @@ export default function ArticleDetailPage() {
         {/* Article Content */}
         <article className="bg-white rounded-lg shadow-sm p-8 mb-6">
           <div 
-            className="prose prose-lg max-w-none"
+            ref={contentRef}
+            className="prose prose-lg max-w-none relative"
             dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br>') }}
           />
+          
+          {/* Audio Controls */}
+          {articleAudio && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium">音频播放</h4>
+                <div className="flex items-center space-x-2">
+                  {!isPlaying ? (
+                    <Button 
+                      size="sm" 
+                      onClick={playAudioWithHighlight}
+                      className="flex items-center space-x-1"
+                    >
+                      <Play className="w-4 h-4" />
+                      <span>播放</span>
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={stopAudio}
+                      className="flex items-center space-x-1"
+                    >
+                      <Square className="w-4 h-4" />
+                      <span>停止</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Progress and Current Word */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>当前高亮: {currentWord || '等待播放...'}</span>
+                  <span>{Math.round(progress * 100)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progress * 100}%` }}
+                  />
+                </div>
+              </div>
+              
+              {/* Hidden Audio Player */}
+              <audio
+                ref={audioPlayerRef}
+                src={articleAudio.audioUrl}
+                preload="metadata"
+                className="hidden"
+              />
+            </div>
+          )}
         </article>
 
         {/* Audio Section */}

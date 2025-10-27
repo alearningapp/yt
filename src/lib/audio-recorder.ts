@@ -72,7 +72,7 @@ export class TextHighlighter {
     this.speed = speed;
   }
 
-  async startHighlighting(callback: (word: string, index: number) => void): Promise<void> {
+  async startHighlighting(callback: (word: string, index: number, isParagraphEnd: boolean) => void): Promise<void> {
     if (this.isHighlighting) {
       throw new Error('高亮正在进行中');
     }
@@ -88,25 +88,69 @@ export class TextHighlighter {
           return;
         }
 
-        // 简单的分词逻辑（按空格和标点分割）
-        const nextSpace = this.text.indexOf(' ', this.currentIndex);
-        const nextPunctuation = this.text.substring(this.currentIndex).search(/[,.!?;:]/);
-        const adjustedPunctuation = nextPunctuation === -1 ? -1 : this.currentIndex + nextPunctuation;
+        // 检测段落结束（换行符或中文句号后跟换行符）
+        const nextParagraphEnd = this.text.indexOf('\n\n', this.currentIndex);
+        const nextSentenceEnd = this.text.indexOf('.\n', this.currentIndex);
+        const nextChineseSentenceEnd = this.text.indexOf('。\n', this.currentIndex);
         
-        let endIndex = Math.min(
-          nextSpace === -1 ? this.text.length : nextSpace,
-          adjustedPunctuation === -1 ? this.text.length : adjustedPunctuation + 1
-        );
+        let paragraphEndIndex = -1;
+        const possibleEnds = [nextParagraphEnd, nextSentenceEnd, nextChineseSentenceEnd].filter(index => index !== -1);
+        
+        if (possibleEnds.length > 0) {
+          paragraphEndIndex = Math.min(...possibleEnds);
+        }
+
+        // 智能分词逻辑：标点符号作为独立字符
+        const currentChar = this.text[this.currentIndex];
+        
+        // 检查当前字符是否为标点符号
+        const isPunctuation = /[，。！？；：、,.!?;:\n]/.test(currentChar);
+        
+        let endIndex = this.currentIndex + 1;
+        
+        if (isPunctuation) {
+          // 标点符号：单独作为一个字符
+          endIndex = this.currentIndex + 1;
+        } else {
+          // 非标点符号：检查是中文还是英文
+          const isChinese = /[\u4e00-\u9fff]/.test(currentChar);
+          
+          if (isChinese) {
+            // 中文：严格按字符分割，每个字符单独高亮
+            endIndex = this.currentIndex + 1;
+          } else {
+            // 英文：按空格和标点分割
+            const nextSpace = this.text.indexOf(' ', this.currentIndex);
+            const nextPunctuation = this.text.substring(this.currentIndex).search(/[,.!?;:\n]/);
+            const adjustedPunctuation = nextPunctuation === -1 ? -1 : this.currentIndex + nextPunctuation;
+            
+            endIndex = Math.min(
+              nextSpace === -1 ? this.text.length : nextSpace,
+              adjustedPunctuation === -1 ? this.text.length : adjustedPunctuation
+            );
+            
+            // 确保至少前进一个字符
+            if (endIndex <= this.currentIndex) {
+              endIndex = this.currentIndex + 1;
+            }
+          }
+        }
+
+        // 如果检测到段落结束，优先使用段落结束位置
+        if (paragraphEndIndex !== -1 && paragraphEndIndex < endIndex) {
+          endIndex = paragraphEndIndex + 2; // 包括换行符
+        }
 
         if (endIndex === -1) {
           endIndex = this.text.length;
         }
 
         const word = this.text.substring(this.currentIndex, endIndex).trim();
+        const isParagraphEnd = paragraphEndIndex !== -1 && endIndex >= paragraphEndIndex;
         
         if (word && this.highlightElement) {
           this.highlightElement.textContent = word;
-          callback(word, this.currentIndex);
+          callback(word, this.currentIndex, isParagraphEnd);
         }
 
         this.currentIndex = endIndex;
