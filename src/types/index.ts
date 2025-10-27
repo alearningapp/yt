@@ -1,4 +1,4 @@
-import { Channel, ChannelHistory, user } from '@/lib/db/schema';
+import { Channel, ChannelHistory, user, Article } from '@/lib/db/schema';
 
 export interface UserBasicInfo {
   id: string;
@@ -55,4 +55,26 @@ export interface ChannelStatsPeriod {
 
 export interface ChannelWithHistoryDetails extends ChannelWithDetails {
   history?: ChannelHistoryWithDetails[];
+}
+
+// Article types
+export interface ArticleFormData {
+  title: string;
+  content: string;
+  excerpt?: string;
+  status: 'draft' | 'published';
+}
+
+export interface ArticleWithDetails extends Article {
+  user?: UserBasicInfo | null;
+  likeCount: number;
+  viewCount: number;
+  isLiked?: boolean;
+}
+
+export interface ArticleListResponse {
+  articles: ArticleWithDetails[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
 }

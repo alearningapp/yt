@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Button } from '@/components/ui/Button';
-import { User, Settings, LogOut, Bookmark } from 'lucide-react';
+import { User, Settings, LogOut, Bookmark, FileText, BookOpen } from 'lucide-react';
 
 export function Navbar() {
   const { session, isLoading, signOut } = useAuth();
@@ -65,6 +65,12 @@ export function Navbar() {
               HelpYT
             </Link>
             <Link
+              href="/articles"
+              className="text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              文章
+            </Link>
+            <Link
               href="/bookmarks"
               className="text-gray-700 hover:text-gray-900 transition-colors"
             >
@@ -89,6 +95,22 @@ export function Navbar() {
                     ref={menuRef}
                     className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
                   >
+                    <Link
+                      href="/articles"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      文章
+                    </Link>
+                    <Link
+                      href="/my-articles"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      我的文章
+                    </Link>
                     <Link
                       href="/bookmarks"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

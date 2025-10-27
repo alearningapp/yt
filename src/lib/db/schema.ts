@@ -153,3 +153,34 @@ export type ChannelWithDetails = Channel & {
 
 export type Bookmark = typeof bookmarks.$inferSelect;
 export type BookmarkLike = typeof bookmarkLikes.$inferSelect;
+
+// Articles tables
+export const articles = pgTable('article', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  excerpt: text('excerpt'),
+  status: text('status').notNull().default('draft'), // 'draft' or 'published'
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  publishedAt: timestamp('published_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const articleLikes = pgTable('article_like', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  articleId: uuid('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  likedAt: timestamp('liked_at').defaultNow().notNull(),
+});
+
+export const articleViews = pgTable('article_view', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  articleId: uuid('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
+  userId: text('user_id'), // Can be null for guest users
+  viewedAt: timestamp('viewed_at').defaultNow().notNull(),
+});
+
+export type Article = typeof articles.$inferSelect;
+export type ArticleLike = typeof articleLikes.$inferSelect;
+export type ArticleView = typeof articleViews.$inferSelect;
