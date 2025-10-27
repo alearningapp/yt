@@ -106,10 +106,18 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
       audioPlayerRef.current.src = audioUrl;
       audioPlayerRef.current.load(); // 重新加载音频
       
+      // 重置文字高亮
+      textHighlighterRef.current.stopHighlighting();
+      setCurrentWord('');
+      setProgress(0);
+      
       // 添加播放结束监听器
       const onEnded = () => {
         console.log('音频播放结束');
         setIsPlaying(false);
+        textHighlighterRef.current.stopHighlighting();
+        setCurrentWord('');
+        setProgress(0);
         URL.revokeObjectURL(audioUrl); // 清理对象URL
       };
       
@@ -117,6 +125,9 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
       audioPlayerRef.current.onerror = (error) => {
         console.error('音频播放失败:', error);
         setIsPlaying(false);
+        textHighlighterRef.current.stopHighlighting();
+        setCurrentWord('');
+        setProgress(0);
         URL.revokeObjectURL(audioUrl);
       };
       
@@ -147,10 +158,21 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
       console.log('开始播放音频');
       await audioPlayerRef.current.play();
       setIsPlaying(true);
-      console.log('成功开始播放音频');
+      
+      // 开始文字高亮同步
+      await textHighlighterRef.current.startHighlighting((word, index, isParagraphEnd) => {
+        const currentProgress = textHighlighterRef.current.getProgress();
+        setCurrentWord(word);
+        setProgress(currentProgress);
+      });
+      
+      console.log('成功开始播放音频并同步文字高亮');
     } catch (error) {
       console.error('播放音频失败:', error);
       setIsPlaying(false);
+      textHighlighterRef.current.stopHighlighting();
+      setCurrentWord('');
+      setProgress(0);
     }
   };
 
@@ -162,16 +184,14 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
     if (audioPlayer) {
       const handleEnded = () => {
         setIsPlaying(false);
-        // 播放完成后延迟1秒停止高亮
-        setTimeout(() => {
-          textHighlighterRef.current.stopHighlighting();
-          setCurrentWord('');
-          setProgress(0);
-        }, 1000);
+        textHighlighterRef.current.stopHighlighting();
+        setCurrentWord('');
+        setProgress(0);
       };
       
       const handlePause = () => {
         setIsPlaying(false);
+        textHighlighterRef.current.stopHighlighting();
       };
       
       const handlePlay = () => {
@@ -226,7 +246,7 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
               <input 
                 type="range" 
                 min="50" 
-                max="500" 
+                max="1000" 
                 step="10"
                 value={speed} 
                 onChange={(e) => setSpeed(Number(e.target.value))}
