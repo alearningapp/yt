@@ -92,6 +92,8 @@ export class TextHighlighter {
     return new Promise((resolve) => {
       this.highlightInterval = setInterval(() => {
         if (this.currentIndex >= this.text.length) {
+          // 确保进度显示为100%
+          callback('', this.text.length, false);
           this.stopHighlighting();
           resolve();
           return;
@@ -239,7 +241,9 @@ export class TextHighlighter {
 
   getProgress(): number {
     if (!this.text) return 0;
-    return (this.currentIndex / this.text.length) * 100;
+    const progress = (this.currentIndex / this.text.length) * 100;
+    // 确保进度不会超过100%
+    return Math.min(progress, 100);
   }
 
   isActive(): boolean {
