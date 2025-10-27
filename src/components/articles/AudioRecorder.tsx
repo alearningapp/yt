@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
-import { AudioRecorder, TextHighlighter, AudioSegmentManager } from '@/lib/audio-recorder';
+import { AudioRecorder, TextHighlighter } from '@/lib/audio-recorder';
 import { AudioCompressor } from '@/lib/audio-compressor';
 
 interface AudioRecorderProps {
@@ -18,7 +18,7 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
   const [currentWord, setCurrentWord] = useState('');
   const [progress, setProgress] = useState(0);
   const [speed, setSpeed] = useState(200); // 默认速度（毫秒/字）
-  const [segments, setSegments] = useState<Map<number, {blob: Blob, startTime: number, endTime: number, duration: number}>>(new Map());
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [recordingStartTime, setRecordingStartTime] = useState<number>(0);
   
   const audioRecorderRef = useRef(new AudioRecorder());
@@ -26,10 +26,7 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
   const audioCompressorRef = useRef(new AudioCompressor());
   const highlightElementRef = useRef<HTMLDivElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioBufferRef = useRef<AudioBuffer | null>(null);
   const recordingStartRef = useRef<number>(0);
-  const segmentMarkersRef = useRef<number[]>([]);
 
   useEffect(() => {
     textHighlighterRef.current.setText(articleContent);
@@ -43,7 +40,7 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
       setIsRecording(true);
       setRecordingStartTime(Date.now());
       recordingStartRef.current = Date.now();
-      segmentMarkersRef.current = [0]; // 第一个段落的开始时间
+      setAudioBlob(null);
       
       // 初始化文字高亮器
       if (highlightElementRef.current) {
@@ -54,18 +51,11 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
       
       await audioRecorderRef.current.startRecording();
       
-      // 开始逐字高亮，并在段落边界自动分段
+      // 开始逐字高亮
       await textHighlighterRef.current.startHighlighting((word, index, isParagraphEnd) => {
         const currentProgress = textHighlighterRef.current.getProgress();
         setCurrentWord(word);
         setProgress(currentProgress);
-        
-        // 如果是段落结束，记录分段时间点
-        if (isParagraphEnd) {
-          const currentTime = Date.now() - recordingStartRef.current;
-          segmentMarkersRef.current.push(currentTime);
-          console.log(`段落结束，时间点: ${currentTime}ms`);
-        }
         
         // 当进度达到100%时自动停止录制
         if (currentProgress >= 99.9 ) {
@@ -86,10 +76,8 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
     try {
       if (audioRecorderRef.current.getRecordingState()) {
         const audioBlob = await audioRecorderRef.current.stopRecording();
-        
-        // 处理分段音频
-        await processSegmentedAudio(audioBlob);
-        
+        setAudioBlob(audioBlob);
+        console.log('录制完成，音频Blob大小:', audioBlob.size);
         setIsRecording(false);
       }
     } catch (error) {
@@ -97,140 +85,76 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
     }
   };
 
-  const processSegmentedAudio = async (fullAudioBlob: Blob) => {
+
+
+  const playAudio = async () => {
+    if (!audioBlob) {
+      console.error('没有可播放的音频');
+      return;
+    }
+    
+    if (!audioPlayerRef.current) {
+      console.error('音频播放器未初始化');
+      return;
+    }
+    
     try {
-      // 创建音频上下文
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
+      // 创建对象URL并播放
+      const audioUrl = URL.createObjectURL(audioBlob);
+      console.log('创建音频URL:', audioUrl, 'Blob大小:', audioBlob.size);
       
-      const arrayBuffer = await fullAudioBlob.arrayBuffer();
-      const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
-      audioBufferRef.current = audioBuffer;
+      audioPlayerRef.current.src = audioUrl;
+      audioPlayerRef.current.load(); // 重新加载音频
       
-      // 根据分段标记切割音频
-      const newSegments = new Map();
-      const sampleRate = audioBuffer.sampleRate;
-      
-      for (let i = 0; i < segmentMarkersRef.current.length - 1; i++) {
-        const startTime = segmentMarkersRef.current[i];
-        const endTime = segmentMarkersRef.current[i + 1] || audioBuffer.duration * 1000;
-        
-        const startSample = Math.floor(startTime / 1000 * sampleRate);
-        const endSample = Math.floor(endTime / 1000 * sampleRate);
-        
-        // 创建新的音频缓冲区
-        const segmentBuffer = audioContextRef.current.createBuffer(
-          audioBuffer.numberOfChannels,
-          endSample - startSample,
-          sampleRate
-        );
-        
-        // 复制音频数据
-        for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-          const channelData = audioBuffer.getChannelData(channel);
-          const segmentData = segmentBuffer.getChannelData(channel);
-          segmentData.set(channelData.subarray(startSample, endSample));
-        }
-        
-        // 转换为Blob
-        const segmentBlob = await audioBufferToBlob(segmentBuffer);
-        
-        newSegments.set(i, {
-          blob: segmentBlob,
-          startTime: startTime,
-          endTime: endTime,
-          duration: (endTime - startTime) / 1000
-        });
-      }
-      
-      setSegments(newSegments);
-      
-    } catch (error) {
-      console.error('音频分段处理失败:', error);
-    }
-  };
-
-  const audioBufferToBlob = async (audioBuffer: AudioBuffer): Promise<Blob> => {
-    return new Promise((resolve) => {
-      const numberOfChannels = audioBuffer.numberOfChannels;
-      const length = audioBuffer.length * numberOfChannels * 2;
-      const bufferArray = new ArrayBuffer(44 + length);
-      const view = new DataView(bufferArray);
-      
-      // WAV文件头
-      writeString(view, 0, 'RIFF');
-      view.setUint32(4, 36 + length, true);
-      writeString(view, 8, 'WAVE');
-      writeString(view, 12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, numberOfChannels, true);
-      view.setUint32(24, audioBuffer.sampleRate, true);
-      view.setUint32(28, audioBuffer.sampleRate * 2 * numberOfChannels, true);
-      view.setUint16(32, numberOfChannels * 2, true);
-      view.setUint16(34, 16, true);
-      writeString(view, 36, 'data');
-      view.setUint32(40, length, true);
-      
-      // 音频数据
-      let offset = 44;
-      for (let i = 0; i < audioBuffer.length; i++) {
-        for (let channel = 0; channel < numberOfChannels; channel++) {
-          const sample = Math.max(-1, Math.min(1, audioBuffer.getChannelData(channel)[i]));
-          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-          offset += 2;
-        }
-      }
-      
-      resolve(new Blob([view], { type: 'audio/wav' }));
-    });
-  };
-
-  const writeString = (view: DataView, offset: number, string: string) => {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i));
-    }
-  };
-
-  const playSegment = async (segmentIndex: number) => {
-    const segmentData = segments.get(segmentIndex);
-    if (segmentData && audioPlayerRef.current) {
-      try {
-        // 创建对象URL并播放
-        const audioUrl = URL.createObjectURL(segmentData.blob);
-        audioPlayerRef.current.src = audioUrl;
-        
-        // 添加播放结束监听器
-        const onEnded = () => {
-          setIsPlaying(false);
-          URL.revokeObjectURL(audioUrl); // 清理对象URL
-        };
-        
-        audioPlayerRef.current.onended = onEnded;
-        audioPlayerRef.current.onerror = () => {
-          console.error('音频播放失败');
-          setIsPlaying(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        await audioPlayerRef.current.play();
-        setIsPlaying(true);
-        console.log(`开始播放段落 ${segmentIndex + 1}`);
-      } catch (error) {
-        console.error('播放音频失败:', error);
+      // 添加播放结束监听器
+      const onEnded = () => {
+        console.log('音频播放结束');
         setIsPlaying(false);
-      }
-    }
-  };
-
-  const stopPlaying = () => {
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.pause();
-      audioPlayerRef.current.currentTime = 0;
+        URL.revokeObjectURL(audioUrl); // 清理对象URL
+      };
+      
+      audioPlayerRef.current.onended = onEnded;
+      audioPlayerRef.current.onerror = (error) => {
+        console.error('音频播放失败:', error);
+        setIsPlaying(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+      
+      // 等待音频加载完成
+      await new Promise((resolve, reject) => {
+        if (!audioPlayerRef.current) {
+          reject(new Error('音频播放器不存在'));
+          return;
+        }
+        
+        audioPlayerRef.current.oncanplaythrough = () => {
+          console.log('音频可以播放');
+          resolve(true);
+        };
+        
+        audioPlayerRef.current.onerror = (error) => {
+          console.error('音频加载失败:', error);
+          reject(error);
+        };
+        
+        // 设置超时
+        setTimeout(() => {
+          console.log('音频加载超时，尝试强制播放');
+          resolve(true);
+        }, 3000);
+      });
+      
+      console.log('开始播放音频');
+      await audioPlayerRef.current.play();
+      setIsPlaying(true);
+      console.log('成功开始播放音频');
+    } catch (error) {
+      console.error('播放音频失败:', error);
       setIsPlaying(false);
     }
   };
+
+
 
   // 添加音频播放器事件监听
   useEffect(() => {
@@ -266,37 +190,23 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
     }
   }, []);
 
-  const reRecordSegment = async (segmentIndex: number) => {
-    // 对于连续录制，重新录制需要重新开始整个录制过程
-    // 这里可以提示用户需要重新录制整个音频
-    if (confirm('重新录制将清除所有已录制的段落。确定要重新录制吗？')) {
-      setSegments(new Map());
-      segmentMarkersRef.current = [0];
-      await startRecording();
-    }
-  };
+
 
   const compressAndSave = async () => {
     try {
-      const compressedSegments: any[] = [];
-      
-      for (const [index, segmentData] of segments.entries()) {
-        const compressedBlob = await audioCompressorRef.current.compressAudio(segmentData.blob);
-        compressedSegments.push({
-          segmentIndex: index,
-          audioBlob: compressedBlob,
-          duration: segmentData.duration,
-          fileSize: compressedBlob.size,
-          startTime: segmentData.startTime,
-          endTime: segmentData.endTime,
-        });
+      if (!audioBlob) {
+        console.error('没有可保存的音频');
+        return;
       }
+      
+      const compressedBlob = await audioCompressorRef.current.compressAudio(audioBlob);
       
       // 这里需要实现上传到服务器的逻辑
       onSave({
         articleId,
         userId,
-        segments: compressedSegments,
+        audioBlob: compressedBlob,
+        fileSize: compressedBlob.size,
         status: 'draft',
       });
       
@@ -379,42 +289,59 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
           </Button>
         )}
         
-        <Button onClick={compressAndSave} disabled={segments.size === 0}>
+        <Button onClick={compressAndSave} disabled={!audioBlob}>
           💾 保存音频
+        </Button>
+        
+        {/* 调试按钮 */}
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => {
+            console.log('调试信息:');
+            console.log('audioBlob:', audioBlob);
+            console.log('isRecording:', isRecording);
+            console.log('isPlaying:', isPlaying);
+            console.log('progress:', progress);
+          }}
+        >
+          🐛 调试信息
         </Button>
       </div>
 
-      {/* 音频片段管理 */}
-      {segments.size > 0 && (
+      {/* 音频管理 */}
+      {audioBlob && (
         <div className="border-t pt-6">
-          <h4 className="font-semibold mb-4">已录制的段落 ({segments.size} 个段落)</h4>
-          <div className="space-y-3">
-            {Array.from(segments.entries()).map(([index, segmentData]) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <div>
-                  <span className="font-medium">段落 {index + 1}</span>
-                  <span className="text-sm text-gray-600 ml-2">
-                    (时长: {segmentData.duration.toFixed(1)}秒)
-                  </span>
-                </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    size="sm" 
-                    onClick={() => playSegment(index)}
-                    disabled={isPlaying}
-                  >
-                    ▶️ 播放
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => reRecordSegment(index)}
-                  >
-                    🔄 重录
-                  </Button>
-                </div>
-              </div>
-            ))}
+          <h4 className="font-semibold mb-4">音频管理</h4>
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded">
+            <div>
+              <span className="font-medium">完整音频</span>
+              <span className="text-sm text-gray-600 ml-2">
+                (大小: {(audioBlob.size / 1024).toFixed(1)} KB)
+              </span>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                size="sm" 
+                onClick={playAudio}
+                disabled={isPlaying}
+              >
+                ▶️ 播放试听
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  if (confirm('确定要重新录制吗？这将清除当前录制的音频。')) {
+                    setAudioBlob(null);
+                    setProgress(0);
+                    setCurrentWord('');
+                  }
+                }}
+              >
+                🔄 重新录制
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -422,8 +349,10 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
       {/* 隐藏的音频播放器 */}
       <audio 
         ref={audioPlayerRef}
+        controls
         onEnded={() => setIsPlaying(false)}
         onPause={() => setIsPlaying(false)}
+        onError={(e) => console.error('音频播放器错误:', e)}
       />
     </div>
   );
