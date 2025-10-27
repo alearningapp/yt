@@ -234,9 +234,22 @@ export default function ArticleDetailPage() {
         <article className="bg-white rounded-lg shadow-sm p-8 mb-6">
           <div 
             ref={contentRef}
-            className="prose prose-lg max-w-none relative"
-            dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br>') }}
-          />
+            className="prose prose-lg max-w-none relative leading-relaxed"
+          >
+            {article.content.split('').map((char, index) => (
+              char === '\n' ? (
+                <br key={index} />
+              ) : (
+                <span 
+                  key={index}
+                  className="char-highlight inline-block px-0.5 transition-all duration-200"
+                  data-index={index}
+                >
+                  {char}
+                </span>
+              )
+            ))}
+          </div>
           
           {/* Audio Controls */}
           {articleAudio && (

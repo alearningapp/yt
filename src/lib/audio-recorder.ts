@@ -58,14 +58,18 @@ export class TextHighlighter {
   private speed = 200;
   private isHighlighting = false;
   private highlightInterval: NodeJS.Timeout | null = null;
+  private originalContent = '';
 
   setText(text: string): void {
     this.text = text;
     this.currentIndex = 0;
+    this.originalContent = text;
   }
 
   setHighlightElement(element: HTMLElement): void {
     this.highlightElement = element;
+    // 保存原始内容
+    this.originalContent = element.innerHTML;
   }
 
   setSpeed(speed: number): void {
@@ -79,6 +83,11 @@ export class TextHighlighter {
 
     this.isHighlighting = true;
     this.currentIndex = 0;
+
+    // 初始化字符分割
+    if (this.highlightElement) {
+      this.initializeCharacterSpans();
+    }
 
     return new Promise((resolve) => {
       this.highlightInterval = setInterval(() => {
@@ -145,17 +154,74 @@ export class TextHighlighter {
           endIndex = this.text.length;
         }
 
-        const word = this.text.substring(this.currentIndex, endIndex).trim();
+        const word = this.text.substring(this.currentIndex, endIndex);
         const isParagraphEnd = paragraphEndIndex !== -1 && endIndex >= paragraphEndIndex;
         
-        if (word && this.highlightElement) {
-          this.highlightElement.textContent = word;
-          callback(word, this.currentIndex, isParagraphEnd);
+        // 在原文中高亮显示当前文字
+        if (this.highlightElement) {
+          this.highlightWordInOriginalText(this.currentIndex, endIndex);
         }
 
+        callback(word, this.currentIndex, isParagraphEnd);
         this.currentIndex = endIndex;
       }, this.speed);
     });
+  }
+
+  // 在原文中高亮显示当前文字
+  private highlightWordInOriginalText(startIndex: number, endIndex: number): void {
+    if (!this.highlightElement) return;
+
+    // 清除之前的高亮
+    const allSpans = this.highlightElement.querySelectorAll('span.char-highlight');
+    allSpans.forEach(span => {
+      span.classList.remove('active');
+    });
+
+    // 高亮当前范围的字符
+    for (let i = startIndex; i < endIndex; i++) {
+      const charSpan = this.highlightElement.querySelector(`span[data-index="${i}"]`);
+      if (charSpan) {
+        charSpan.classList.add('active');
+      }
+    }
+  }
+
+  // 初始化字符分割
+  private initializeCharacterSpans(): void {
+    if (!this.highlightElement) return;
+
+    // 将文本分割为单个字符，每个字符用span包裹
+    const chars = Array.from(this.text);
+    let htmlContent = '';
+    
+    chars.forEach((char, index) => {
+      if (char === '\n') {
+        htmlContent += '<br>';
+      } else {
+        htmlContent += `<span class="char-highlight" data-index="${index}">${char}</span>`;
+      }
+    });
+
+    this.highlightElement.innerHTML = htmlContent;
+    
+    // 添加CSS样式
+    if (!this.highlightElement.querySelector('style')) {
+      const style = document.createElement('style');
+      style.textContent = `
+        .char-highlight {
+          transition: all 0.2s ease;
+          padding: 1px 2px;
+          border-radius: 2px;
+        }
+        .char-highlight.active {
+          background-color: yellow;
+          color: black;
+          font-weight: bold;
+        }
+      `;
+      this.highlightElement.appendChild(style);
+    }
   }
 
   stopHighlighting(): void {
@@ -164,6 +230,11 @@ export class TextHighlighter {
       this.highlightInterval = null;
     }
     this.isHighlighting = false;
+    
+    // 恢复原始内容
+    if (this.highlightElement) {
+      this.highlightElement.innerHTML = this.originalContent;
+    }
   }
 
   getProgress(): number {

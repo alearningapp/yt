@@ -311,24 +311,37 @@ export default function ArticleAudioRecorder({ articleContent, articleId, userId
         </div>
       </div>
 
-      {/* 当前高亮文字 */}
+      {/* 文章内容区域（用于高亮显示） */}
       <div className="mb-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-medium mb-2">文章内容（播放时实时高亮）</h4>
           <div 
             ref={highlightElementRef}
-            className="text-2xl font-bold text-blue-800 min-h-[40px] flex items-center justify-center"
+            className="prose prose-lg max-w-none bg-white p-4 rounded border min-h-[200px] leading-relaxed"
           >
-            {currentWord || '准备开始...'}
+            {articleContent.split('').map((char, index) => (
+              char === '\n' ? (
+                <br key={index} />
+              ) : (
+                <span 
+                  key={index}
+                  className="char-highlight inline-block px-0.5 transition-all duration-200"
+                  data-index={index}
+                >
+                  {char}
+                </span>
+              )
+            ))}
           </div>
           <div className="mt-2">
+            <div className="text-sm text-gray-600 mb-1">
+              当前高亮: {currentWord || '等待开始...'} | 进度: {progress.toFixed(1)}%
+            </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               ></div>
-            </div>
-            <div className="text-sm text-gray-600 mt-1">
-              进度: {progress.toFixed(1)}%
             </div>
           </div>
         </div>
