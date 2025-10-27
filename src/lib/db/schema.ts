@@ -184,3 +184,31 @@ export const articleViews = pgTable('article_view', {
 export type Article = typeof articles.$inferSelect;
 export type ArticleLike = typeof articleLikes.$inferSelect;
 export type ArticleView = typeof articleViews.$inferSelect;
+
+// Audio recording tables
+export const articleAudio = pgTable('article_audio', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  articleId: uuid('article_id').notNull().references(() => articles.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  audioUrl: text('audio_url'),
+  status: text('status').notNull().default('draft'), // 'draft' or 'published'
+  duration: integer('duration'), // in seconds
+  fileSize: integer('file_size'), // in bytes
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const articleAudioSegments = pgTable('article_audio_segment', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  audioId: uuid('audio_id').notNull().references(() => articleAudio.id, { onDelete: 'cascade' }),
+  segmentIndex: integer('segment_index').notNull(),
+  startWord: integer('start_word').notNull(),
+  endWord: integer('end_word').notNull(),
+  audioUrl: text('audio_url'),
+  duration: integer('duration'), // in seconds
+  fileSize: integer('file_size'), // in bytes
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type ArticleAudio = typeof articleAudio.$inferSelect;
+export type ArticleAudioSegment = typeof articleAudioSegments.$inferSelect;

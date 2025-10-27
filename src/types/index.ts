@@ -78,3 +78,38 @@ export interface ArticleListResponse {
   page: number;
   pageSize: number;
 }
+
+// Audio recording types
+export interface AudioSegmentData {
+  segmentIndex: number;
+  startWord: number;
+  endWord: number;
+  audioUrl: string;
+  duration: number;
+  fileSize: number;
+}
+
+export interface ArticleAudioData {
+  articleId: string;
+  userId: string;
+  audioUrl?: string;
+  status: 'draft' | 'published';
+  duration?: number;
+  fileSize?: number;
+  segments: AudioSegmentData[];
+}
+
+export interface RecordingSession {
+  currentSegment: number;
+  segments: Map<number, Blob>;
+  isRecording: boolean;
+  isPlaying: boolean;
+  speed: number; // words per minute
+}
+
+export interface AudioPlayerState {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  currentSegment: number;
+}

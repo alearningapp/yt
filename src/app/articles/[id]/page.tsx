@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Button } from '@/components/ui/Button';
 import { getArticleById, toggleArticleLike } from '@/lib/actions/articles';
+import { getArticleAudio } from '@/lib/actions/article-audio';
 import { ArticleWithDetails } from '@/types';
-import { Calendar, Eye, Heart, User, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { Calendar, Eye, Heart, User, Edit, Trash2, ArrowLeft, Volume2, Mic } from 'lucide-react';
+import AudioPlayer from '@/components/articles/AudioPlayer';
 
 export default function ArticleDetailPage() {
   const params = useParams();
@@ -16,11 +18,14 @@ export default function ArticleDetailPage() {
   const [article, setArticle] = useState<ArticleWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [liking, setLiking] = useState(false);
+  const [articleAudio, setArticleAudio] = useState<any>(null);
+  const [audioLoading, setAudioLoading] = useState(false);
 
   const articleId = params.id as string;
 
   useEffect(() => {
     loadArticle();
+    loadArticleAudio();
   }, [articleId]);
 
   const loadArticle = async () => {
@@ -32,6 +37,22 @@ export default function ArticleDetailPage() {
       console.error('Failed to load article:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadArticleAudio = async () => {
+    if (!session?.user) return;
+    
+    setAudioLoading(true);
+    try {
+      const result = await getArticleAudio(articleId, session.user.id);
+      if (result.success) {
+        setArticleAudio(result.audio);
+      }
+    } catch (error) {
+      console.error('Failed to load article audio:', error);
+    } finally {
+      setAudioLoading(false);
     }
   };
 
@@ -152,6 +173,38 @@ export default function ArticleDetailPage() {
           />
         </article>
 
+        {/* Audio Section */}
+        {isOwner && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center">
+              <Volume2 className="w-5 h-5 mr-2" />
+              文章音频
+            </h3>
+            
+            {articleAudio ? (
+              <div className="space-y-4">
+                <AudioPlayer audioUrl={articleAudio.audioUrl || ''} />
+                <div className="flex space-x-2 text-sm text-gray-600">
+                  <span>时长: {Math.floor((articleAudio.duration || 0) / 60)}分钟</span>
+                  <span>大小: {Math.round((articleAudio.fileSize || 0) / 1024)}KB</span>
+                  <span>状态: {articleAudio.status === 'published' ? '已发布' : '草稿'}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Mic className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">这篇文章还没有录制音频</p>
+                <Link href={`/articles/${articleId}/record-audio`}>
+                  <Button>
+                    <Mic className="w-4 h-4 mr-2" />
+                    开始录制音频
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex justify-between items-center">
           <Button
@@ -166,8 +219,18 @@ export default function ArticleDetailPage() {
           </Button>
 
           {isOwner && (
-            <div className="text-sm text-gray-500">
-              状态: {article.status === 'published' ? '已发布' : '草稿'}
+            <div className="flex space-x-4 items-center">
+              <div className="text-sm text-gray-500">
+                状态: {article.status === 'published' ? '已发布' : '草稿'}
+              </div>
+              {!articleAudio && (
+                <Link href={`/articles/${articleId}/record-audio`}>
+                  <Button size="sm" variant="outline">
+                    <Mic className="w-4 h-4 mr-2" />
+                    录制音频
+                  </Button>
+                </Link>
+              )}
             </div>
           )}
         </div>
