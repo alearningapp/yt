@@ -8,21 +8,32 @@ import { revalidatePath } from 'next/cache';
 import { ArticleFormData, ArticleWithDetails } from '@/types';
 
 export async function createArticle(data: ArticleFormData, userId: string) {
-  const articleData = {
-    title: data.title,
-    content: data.content,
-    excerpt: data.excerpt || data.content.substring(0, 200) + '...',
-    status: data.status,
-    userId: userId,
-    publishedAt: data.status === 'published' ? new Date() : null,
-  };
+  try {
+    console.log('Creating article with data:', { title: data.title, status: data.status, userId });
+    
+    const articleData = {
+      title: data.title,
+      content: data.content,
+      excerpt: data.excerpt || data.content.substring(0, 200) + '...',
+      status: data.status,
+      userId: userId,
+      publishedAt: data.status === 'published' ? new Date() : null,
+    };
 
-  const [newArticle] = await db.insert(articles).values(articleData).returning();
-  
-  revalidatePath('/articles');
-  revalidatePath('/my-articles');
-  
-  return newArticle;
+    console.log('Article data to insert:', articleData);
+    
+    const [newArticle] = await db.insert(articles).values(articleData).returning();
+    
+    console.log('Article created successfully:', newArticle);
+    
+    revalidatePath('/articles');
+    revalidatePath('/my-articles');
+    
+    return newArticle;
+  } catch (error) {
+    console.error('Error creating article:', error);
+    throw error;
+  }
 }
 
 export async function updateArticle(id: string, data: ArticleFormData, userId: string) {

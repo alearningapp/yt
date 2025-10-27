@@ -20,7 +20,7 @@ export default function NewArticlePage() {
     title: '',
     content: '',
     excerpt: '',
-    status: 'draft' as 'draft' | 'published',
+    status: 'published' as 'draft' | 'published',
   });
 
   // Redirect if not authenticated
@@ -39,9 +39,16 @@ export default function NewArticlePage() {
         setError('请先登录');
         return;
       }
-      await createArticle(formData, session.user.id);
+      
+      console.log('Submitting article form:', formData);
+      console.log('User ID:', session.user.id);
+      
+      const result = await createArticle(formData, session.user.id);
+      console.log('Article creation result:', result);
+      
       router.push('/articles');
     } catch (err) {
+      console.error('Error creating article:', err);
       setError(err instanceof Error ? err.message : '创建文章失败');
     } finally {
       setLoading(false);
